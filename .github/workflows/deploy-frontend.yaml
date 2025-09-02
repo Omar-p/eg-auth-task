@@ -21,7 +21,7 @@ permissions:
 env:
   NODE_VERSION: '23.11.0'
   AWS_REGION: 'eu-central-1'
-  APP_URL: 'https://easygenerate.omarshabaan.tech'
+  APP_URL: 'https://easygenerator.omarshabaan.tech'
 
 jobs:
   # Quality checks job
