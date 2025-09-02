@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for SSL in us-east-1 for cloudfront distribution'
+
+
+Parameters:
+  DomainName:
+    Type: String
+    Default: easygenerator.omarshabaan.tech
+    Description: Domain name for the application
+  Application:
+    Type: String
+    Default: easygenerator-interview-task
+    Description: Application name
+
+Resources:
+  SSLCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      ValidationMethod: DNS
+      Tags:
+        - Key: Application
+          Value: !Ref Application
