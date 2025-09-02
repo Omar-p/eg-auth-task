@@ -7,6 +7,7 @@ describe("HomeView", () => {
 
     // Check if header is rendered
     const header = screen.getByRole("banner");
+
     expect(header).toBeInTheDocument();
 
     // Check if main content is rendered
@@ -18,7 +19,6 @@ describe("HomeView", () => {
       name: /welcome to easygenerator/i,
     });
     expect(heading).toBeInTheDocument();
-
   });
 
   it("has proper responsive layout classes", () => {
