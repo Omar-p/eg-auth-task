@@ -6,6 +6,7 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
+    "types": ["vitest/globals", "@testing-library/jest-dom"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -14,6 +15,20 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+
+    /* Path mapping */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@atoms": ["./src/views/atoms"],
+      "@atoms/*": ["./src/views/atoms/*"],
+      "@components": ["./src/views/components"],
+      "@components/*": ["./src/views/components/*"],
+      "@containers": ["./src/views/containers"],
+      "@containers/*": ["./src/views/containers/*"],
+      "@assets": ["./src/assets"],
+      "@assets/*": ["./src/assets/*"]
+    },
 
     /* Linting */
     "strict": true,
