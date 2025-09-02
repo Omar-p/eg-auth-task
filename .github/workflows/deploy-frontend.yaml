@@ -165,7 +165,7 @@ jobs:
         if: success()
         run: |
           echo "🚀 Deployment successful!"
-          echo "URL: ${{ env.APP_URL }}""
+          echo "URL: ${{ env.APP_URL }}"
           echo "Build version: ${{ needs.build.outputs.build-version }}"
   smoke-tests:
     name: Smoke Tests
@@ -205,3 +205,4 @@ jobs:
             echo "❌ Unexpected page content"
             exit 1
           fi
+
