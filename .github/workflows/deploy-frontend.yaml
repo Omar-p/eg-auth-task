@@ -1,0 +1,207 @@
+name: Deploy React App to AWS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yaml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yaml'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  NODE_VERSION: '23.11.0'
+  AWS_REGION: 'eu-central-1'
+  APP_URL: 'https://easygenerate.omarshabaan.tech'
+
+jobs:
+  # Quality checks job
+  quality-checks:
+    name: Code Quality & Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run Prettier check
+        run: npm run format:check
+
+      - name: Run tests
+        run: npm run test -- --coverage --watch=false
+        continue-on-error: true
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+        continue-on-error: true
+
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    needs: quality-checks
+    outputs:
+      build-version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate build version
+        id: version
+        run: |
+          VERSION=$(date +%Y%m%d)-$(echo ${{ github.sha }} | cut -c1-7)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "BUILD_VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Build application
+        run: |
+          npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_APP_NAME: ${{ secrets.VITE_APP_NAME }}
+          VITE_VERSION: ${{ env.BUILD_VERSION }}
+          VITE_BUILD_TIME: ${{ github.run_number }}
+          VITE_COMMIT_SHA: ${{ github.sha }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-files
+          path: frontend/dist/
+          retention-days: 14
+
+  # Deploy
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: ${{ env.APP_URL }}"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-files
+          path: frontend/dist/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_ACTION_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActions-frontend
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "*.html" \
+            --exclude "service-worker.js" \
+            --exclude "manifest.json"
+          
+          # Upload HTML files with no-cache
+          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} \
+            --cache-control "public, max-age=0, must-revalidate" \
+            --exclude "*" \
+            --include "index.html" \
+            --include "service-worker.js" \
+            --include "manifest.json"
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "🚀 Deployment successful!"
+          echo "URL: ${{ env.APP_URL }}""
+          echo "Build version: ${{ needs.build.outputs.build-version }}"
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    needs: deploy
+    defaults:
+      run:
+        working-directory: frontend
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Wait for deployment
+        run: sleep 30
+
+      - name: Check website availability
+        run: |
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.APP_URL }}")
+          if [ $HTTP_STATUS -eq 200 ]; then
+            echo "✅ Website is accessible (HTTP $HTTP_STATUS)"
+          else
+            echo "❌ Website returned HTTP $HTTP_STATUS" 
+            exit 1
+          fi
+
+      - name: Check SSL certificate
+        run: |
+          echo | openssl s_client -servername easygenerator.omarshabaan.tech -connect easygenerator.omarshabaan.tech:443 2>/dev/null | openssl x509 -noout -dates
+
+      - name: Verify content
+        run: |
+          CONTENT=$(curl -s ${{ env.APP_URL }}")
+          if echo "$CONTENT" | grep -q "root"; then
+            echo "✅ Page content looks good"
+          else
+            echo "❌ Unexpected page content"
+            exit 1
+          fi
