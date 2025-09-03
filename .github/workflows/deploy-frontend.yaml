@@ -121,7 +121,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment:
       name: production
-      url: ${{ env.APP_URL }}"
+      url: ${{ env.APP_URL }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -198,7 +198,7 @@ jobs:
 
       - name: Verify content
         run: |
-          CONTENT=$(curl -s ${{ env.APP_URL }}")
+          CONTENT=$(curl -s ${{ env.APP_URL }})
           if echo "$CONTENT" | grep -q "root"; then
             echo "✅ Page content looks good"
           else
