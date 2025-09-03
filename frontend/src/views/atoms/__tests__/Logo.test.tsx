@@ -6,7 +6,7 @@ describe("Logo", () => {
     render(<Logo />);
     const logo = screen.getByAltText("Easygenerator logo");
     expect(logo).toBeInTheDocument();
-    expect(logo).toHaveClass("h-6", "w-auto", "sm:h-8");
+    expect(logo).toHaveClass("h-8", "w-auto", "sm:h-12");
   });
 
   it("renders with custom alt text", () => {

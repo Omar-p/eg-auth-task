@@ -10,6 +10,10 @@ export const Logo = ({
   alt = "Easygenerator logo",
 }: LogoProps) => {
   return (
-    <img src={logoImg} alt={alt} className={`h-6 w-auto sm:h-8 ${className}`} />
+    <img
+      src={logoImg}
+      alt={alt}
+      className={`h-8 w-auto sm:h-12 ${className}`}
+    />
   );
 };
