@@ -27,7 +27,11 @@
       "@containers": ["./src/views/containers"],
       "@containers/*": ["./src/views/containers/*"],
       "@assets": ["./src/assets"],
-      "@assets/*": ["./src/assets/*"]
+      "@assets/*": ["./src/assets/*"],
+      "@/components/ui": ["./src/components/ui"],
+      "@/components/ui/*": ["./src/components/ui/*"],
+      "@/lib": ["./src/lib"],
+      "@/lib/*": ["./src/lib/*"]
     },
 
     /* Linting */
