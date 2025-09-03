@@ -23,8 +23,13 @@
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@types/mongoose": "^5.11.96",
+    "mongodb": "^6.19.0",
+    "mongoose": "^8.18.0",
+    "nestjs-pino": "^4.4.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
