@@ -1,3 +1,9 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: #f04e23;
+  --color-brand-secondary: #f36c2d;
+  --color-brand-accent: #f89b33;
+  --color-brand-coral: #ff6f61;
+  --color-brand-pastel: #ffd580;
+}
