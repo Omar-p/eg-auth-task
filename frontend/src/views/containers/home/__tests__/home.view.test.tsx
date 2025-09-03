@@ -14,27 +14,27 @@ describe("HomeView", () => {
     const main = screen.getByRole("main");
     expect(main).toBeInTheDocument();
 
-    // Check if welcome heading is rendered
+    // Check if auth form heading is rendered (Welcome Back for sign in)
     const heading = screen.getByRole("heading", {
-      name: /welcome to easygenerator/i,
+      name: /welcome back/i,
     });
     expect(heading).toBeInTheDocument();
   });
 
-  it("has proper responsive layout classes", () => {
+  it("has animated background and proper layout", () => {
     render(<HomeView />);
 
-    const container = screen.getByRole("main").parentElement;
-    expect(container).toHaveClass("min-h-screen", "bg-gray-50");
-
-    const main = screen.getByRole("main");
-    expect(main).toHaveClass(
-      "max-w-7xl",
-      "mx-auto",
-      "px-4",
-      "sm:px-6",
-      "lg:px-8",
-      "py-8",
+    // Check if the animated background container exists
+    const animatedBg = screen.getByRole("main").parentElement?.parentElement;
+    expect(animatedBg).toHaveClass(
+      "relative",
+      "min-h-screen",
+      "bg-gradient-to-br",
+      "from-orange-50",
+      "via-white",
+      "to-red-50",
+      "pt-16",
+      "sm:pt-20",
     );
   });
 });
