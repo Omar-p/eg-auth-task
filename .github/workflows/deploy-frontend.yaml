@@ -184,7 +184,7 @@ jobs:
 
       - name: Check website availability
         run: |
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.APP_URL }}")
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.APP_URL }})
           if [ $HTTP_STATUS -eq 200 ]; then
             echo "✅ Website is accessible (HTTP $HTTP_STATUS)"
           else
