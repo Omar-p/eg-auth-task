@@ -57,7 +57,6 @@ class AuthAPI {
           });
         }
       } catch {
-        window.location.href = "/";
         throw new Error("Session expired");
       } finally {
         this.isRefreshing = false;

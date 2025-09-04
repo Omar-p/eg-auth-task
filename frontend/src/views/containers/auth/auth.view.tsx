@@ -123,14 +123,7 @@ export const AuthView = () => {
   };
 
   const onSignUpSubmit = (data: SignUpFormData) => {
-    registerMutation.mutate(data, {
-      onSuccess: () => {
-        // Switch to sign-in mode after successful registration
-        setTimeout(() => {
-          handleModeToggle("signin");
-        }, 2000); // Give time for user to read the success message
-      },
-    });
+    registerMutation.mutate(data);
   };
 
   return (
