@@ -183,7 +183,7 @@ export const AuthView = () => {
                     type="text"
                     {...registerSignUp("name")}
                     placeholder="Enter your full name"
-                    className={`${isMobile ? "h-12" : "h-12"} px-4 ${isMobile ? "text-base" : "text-base"} rounded-xl border-2 transition-all duration-300 focus:ring-4 focus:ring-brand-primary/20 focus:border-brand-primary bg-gray-50 focus:bg-white ${signUpErrors.name ? "border-red-400 focus:border-red-500" : "border-gray-200 hover:border-gray-300"}`}
+                    className={`h-12 px-4 text-base rounded-xl border-2 transition-all duration-300 focus:ring-4 focus:ring-brand-primary/20 focus:border-brand-primary bg-gray-50 focus:bg-white ${signUpErrors.name ? "border-red-400 focus:border-red-500" : "border-gray-200 hover:border-gray-300"}`}
                   />
                   {signUpErrors.name && (
                     <p className="text-sm text-red-600 flex items-center gap-2 mt-2">

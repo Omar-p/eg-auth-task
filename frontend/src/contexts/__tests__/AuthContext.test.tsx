@@ -69,7 +69,7 @@ describe("AuthContext", () => {
 
   it("should restore user from localStorage on initialization", async () => {
     const { authAPI } = await import("@/services/auth-api");
-    const mockAuthAPI = (authAPI as unknown) as {
+    const mockAuthAPI = authAPI as unknown as {
       refreshToken: ReturnType<typeof vi.fn>;
       logout: ReturnType<typeof vi.fn>;
     };
@@ -102,7 +102,7 @@ describe("AuthContext", () => {
 
   it("should handle failed refresh on initialization", async () => {
     const { authAPI } = await import("@/services/auth-api");
-    const mockAuthAPI = (authAPI as unknown) as {
+    const mockAuthAPI = authAPI as unknown as {
       refreshToken: ReturnType<typeof vi.fn>;
       logout: ReturnType<typeof vi.fn>;
     };
@@ -148,7 +148,7 @@ describe("AuthContext", () => {
 
   it("should logout and clear all data", async () => {
     const { authAPI } = await import("@/services/auth-api");
-    const mockAuthAPI = (authAPI as unknown) as {
+    const mockAuthAPI = authAPI as unknown as {
       refreshToken: ReturnType<typeof vi.fn>;
       logout: ReturnType<typeof vi.fn>;
     };
