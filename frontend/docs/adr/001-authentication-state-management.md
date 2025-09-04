@@ -119,6 +119,13 @@ Authentication actions (login, register) are handled by dedicated React Query mu
 - **AuthContext focus**: Limited to state management (user, loading, tokens, logout)
 - **Benefits**: Better separation of concerns, improved error handling, optimistic updates
 
+#### AuthAPI Integration
+The AuthAPI singleton integrates with AuthContext for secure token management:
+- **Token Access**: AuthContext provides token getter/setter methods to AuthAPI
+- **Authorization Headers**: All authenticated requests include `Bearer {token}` headers
+- **Automatic Refresh**: Failed 401 requests trigger token refresh and request retry
+- **Error Handling**: Custom `HttpError` class preserves HTTP status codes for proper error handling
+
 ### Automatic Token Refresh Strategy
 
 ```typescript
@@ -149,25 +156,66 @@ useEffect(() => {
 ### Request Interceptor with Automatic Refresh
 
 ```typescript
-// Handle 401 with auto-refresh (but not for auth endpoints)
-if (response.status === 401 && !endpoint.includes('/auth/')) {
-  if (!this.isRefreshing) {
-    this.isRefreshing = true;
-    this.refreshPromise = this.attemptRefresh();
+// AuthAPI integration with token management
+class AuthAPI {
+  private getAccessToken: () => string | null = () => null;
+  private setAccessToken: (token: string | null) => void = () => {};
+
+  setTokenGetter(getter: () => string | null) {
+    this.getAccessToken = getter;
   }
 
-  try {
-    const newToken = await this.refreshPromise;
-    if (newToken) {
-      // Retry original request with new token
-      response = await fetch(url, { /* retry with same params */ });
+  setTokenSetter(setter: (token: string | null) => void) {
+    this.setAccessToken = setter;
+  }
+
+  public async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const fetchWithToken = async (token: string | null) => {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      return fetch(url, { ...options, headers, credentials: 'include' });
+    };
+
+    let response = await fetchWithToken(this.getAccessToken());
+
+    // Handle 401 with auto-refresh (but not for auth endpoints)
+    if (response.status === 401 && !endpoint.includes('/auth/')) {
+      if (!this.isRefreshing) {
+        this.isRefreshing = true;
+        this.refreshPromise = this.attemptRefresh().finally(() => {
+          this.isRefreshing = false;
+          this.refreshPromise = null;
+        });
+      }
+
+      const newToken = await this.refreshPromise;
+      if (newToken) {
+        response = await fetchWithToken(newToken);
+      } else {
+        this.setAccessToken(null);
+        throw new HttpError('Session expired', 401);
+      }
     }
-  } catch (refreshError) {
-    // Redirect to login
-    window.location.href = '/';
-    throw new Error('Session expired');
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'An error occurred' }));
+      throw new HttpError(error.message || `HTTP ${response.status}`, response.status);
+    }
+
+    return response.json();
   }
 }
+
+// AuthContext setup
+useEffect(() => {
+  authAPI.setTokenGetter(() => accessTokenRef.current);
+  authAPI.setTokenSetter((token) => setAccessToken(token));
+}, []);
 ```
 
 ## Consequences
@@ -198,6 +246,12 @@ if (response.status === 401 && !endpoint.includes('/auth/')) {
    - `useMobile()` hook for responsive design
    - Touch-friendly authentication forms
    - Optimized for mobile user experience
+
+6. **Robust Error Handling**: Custom HttpError class
+   - Preserves HTTP status codes for proper error handling
+   - Integrates with React Query retry logic
+   - Prevents unnecessary retries on 4xx errors
+   - Better debugging and monitoring capabilities
 
 ### Negative Consequences
 
@@ -243,6 +297,33 @@ if (response.status === 401 && !endpoint.includes('/auth/')) {
   - `auth.types.ts` exports types, context, and hooks (`useAuth`)
 - **Import Pattern**: Components import `useAuth` from `auth.types.ts`
 - **Type Safety**: All authentication types centralized in one location
+- **AuthAPI Integration**: Singleton pattern with token access from AuthContext
+
+### Error Handling Architecture
+```typescript
+export class HttpError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'HttpError';
+    this.status = status;
+  }
+}
+
+// React Query integration
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        if (error instanceof HttpError && error.status >= 400 && error.status < 500) {
+          return false; // Don't retry 4xx errors
+        }
+        return failureCount < 3;
+      },
+    },
+  },
+});
+```
 
 ### Mobile Responsiveness
 - **`useMobile()` hook**: Uses `window.matchMedia` for performance
