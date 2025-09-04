@@ -128,7 +128,8 @@ export const AuthView = () => {
 
   return (
     <div
-      className={`flex items-center justify-center min-h-screen ${isMobile ? "px-4 py-6" : "px-4 py-8"}`}
+      className={`flex items-center justify-center min-h-screen w-full ${isMobile ? "px-4 py-6" : "px-4 py-8"}`}
+      style={{ minHeight: "100vh", minWidth: "100vw" }}
     >
       <div className={`w-full ${isMobile ? "max-w-sm" : "max-w-md"}`}>
         {/* Logo */}

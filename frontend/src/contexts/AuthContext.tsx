@@ -37,7 +37,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           } catch {
             console.error("Token refresh failed on app load");
           }
-        } catch {
+        } catch (error) {
+          console.error("Failed to parse user data from localStorage:", error);
           localStorage.removeItem("user_data");
         }
       }
