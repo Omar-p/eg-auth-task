@@ -82,7 +82,7 @@ describe("useMobile", () => {
   it("should handle environment without matchMedia", () => {
     // Temporarily remove matchMedia
     const originalMatchMedia = window.matchMedia;
-    delete (window as Window & { matchMedia?: unknown }).matchMedia;
+    (window as unknown as { matchMedia: undefined }).matchMedia = undefined;
 
     const { result } = renderHook(() => useMobile());
 
