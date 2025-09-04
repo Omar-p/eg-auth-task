@@ -21,6 +21,10 @@ describe("AuthAPI", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFetch.mockClear();
+
+    // Set up token getter/setter for tests
+    authAPI.setTokenGetter(() => null);
+    authAPI.setTokenSetter(() => {});
   });
 
   describe("login", () => {

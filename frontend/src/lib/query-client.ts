@@ -1,15 +1,14 @@
 import { QueryClient } from "@tanstack/react-query";
+import { HttpError } from "@/services/auth-api";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
       retry: (failureCount, error) => {
-        // Don't retry on 4xx errors
+        // Don't retry on 4xx errors from HttpError
         if (
-          error &&
-          "status" in error &&
-          typeof error.status === "number" &&
+          error instanceof HttpError &&
           error.status >= 400 &&
           error.status < 500
         ) {

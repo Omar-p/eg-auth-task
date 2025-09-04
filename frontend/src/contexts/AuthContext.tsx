@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { User, AuthTokens, AuthContextType } from "./auth.types";
 import { AuthContext } from "./auth.types";
+import { authAPI } from "@/services/auth-api";
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -10,6 +11,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const accessTokenRef = useRef(accessToken);
+  accessTokenRef.current = accessToken;
+
+  useEffect(() => {
+    authAPI.setTokenGetter(() => accessTokenRef.current);
+    authAPI.setTokenSetter((token) => setAccessToken(token));
+  }, []);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -26,7 +35,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             const refreshResponse = await authAPI.refreshToken();
             setAccessToken(refreshResponse.accessToken);
           } catch {
-            // Refresh failed, but keep user data for re-login
             console.error("Token refresh failed on app load");
           }
         } catch {

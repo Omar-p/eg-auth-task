@@ -10,6 +10,16 @@ vi.mock("@/services/auth-api", () => ({
     register: vi.fn(),
     logout: vi.fn(),
     refreshToken: vi.fn(),
+    setTokenGetter: vi.fn(),
+    setTokenSetter: vi.fn(),
+  },
+  HttpError: class extends Error {
+    status: number;
+    constructor(message: string, status: number) {
+      super(message);
+      this.name = "HttpError";
+      this.status = status;
+    }
   },
 }));
 
