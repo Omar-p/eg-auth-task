@@ -12,7 +12,7 @@
     "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc --project tsconfig.app.json --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -20,12 +20,17 @@
     "@tailwindcss/cli": "^4.1.12",
     "@tailwindcss/postcss": "^4.1.12",
     "@tailwindcss/vite": "^4.1.12",
+    "@tanstack/react-query": "^5.85.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "jose": "^6.1.0",
     "lucide-react": "^0.542.0",
+    "next-themes": "^0.4.6",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.62.0",
+    "react-router-dom": "^7.8.2",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "zod": "^4.1.5"
   },
@@ -53,5 +58,6 @@
     "typescript-eslint": "^8.39.1",
     "vite": "^7.1.2",
     "vitest": "^3.2.4"
-  }
+  },
+  "packageManager": "yarn@1.22.21+sha1.1959a18351b811cdeedbd484a8f86c3cc3bbaf72"
 }

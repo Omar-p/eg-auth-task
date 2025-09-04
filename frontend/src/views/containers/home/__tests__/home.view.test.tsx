@@ -1,9 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import { HomeView } from "../home.view";
+import { TestWrapper } from "@/test-utils/test-wrapper";
 
 describe("HomeView", () => {
   it("renders the home view with header and main content", () => {
-    render(<HomeView />);
+    render(
+      <TestWrapper>
+        <HomeView />
+      </TestWrapper>,
+    );
 
     // Check if header is rendered
     const header = screen.getByRole("banner");
@@ -22,7 +27,11 @@ describe("HomeView", () => {
   });
 
   it("has animated background and proper layout", () => {
-    render(<HomeView />);
+    render(
+      <TestWrapper>
+        <HomeView />
+      </TestWrapper>,
+    );
 
     // Check if the animated background container exists
     const animatedBg = screen.getByRole("main").parentElement?.parentElement;

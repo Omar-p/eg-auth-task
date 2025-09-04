@@ -2,10 +2,15 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AuthView } from "../auth.view";
 import { signUpSchema } from "../auth.types";
+import { TestWrapper } from "@/test-utils/test-wrapper";
 
 describe("AuthView", () => {
   it("renders sign-in form by default", () => {
-    render(<AuthView />);
+    render(
+      <TestWrapper>
+        <AuthView />
+      </TestWrapper>,
+    );
     expect(screen.getByText("Welcome Back")).toBeInTheDocument();
     expect(
       screen.getByText("Sign in to continue your journey"),
@@ -17,7 +22,11 @@ describe("AuthView", () => {
 
   it("toggles to sign-up form", async () => {
     const user = userEvent.setup();
-    render(<AuthView />);
+    render(
+      <TestWrapper>
+        <AuthView />
+      </TestWrapper>,
+    );
 
     const signUpButton = screen.getByRole("button", { name: /sign up/i });
     await user.click(signUpButton);
@@ -33,7 +42,11 @@ describe("AuthView", () => {
 
   it("toggles back to sign-in form from sign-up", async () => {
     const user = userEvent.setup();
-    render(<AuthView />);
+    render(
+      <TestWrapper>
+        <AuthView />
+      </TestWrapper>,
+    );
 
     // Switch to sign-up
     await user.click(screen.getByRole("button", { name: /sign up/i }));
@@ -47,7 +60,11 @@ describe("AuthView", () => {
   describe("Password validation", () => {
     it("shows password requirements in sign-up mode", async () => {
       const user = userEvent.setup();
-      render(<AuthView />);
+      render(
+        <TestWrapper>
+          <AuthView />
+        </TestWrapper>,
+      );
 
       await user.click(screen.getByRole("button", { name: /sign up/i }));
 
@@ -62,7 +79,11 @@ describe("AuthView", () => {
 
     it("updates password requirements as user types", async () => {
       const user = userEvent.setup();
-      render(<AuthView />);
+      render(
+        <TestWrapper>
+          <AuthView />
+        </TestWrapper>,
+      );
 
       await user.click(screen.getByRole("button", { name: /sign up/i }));
 
@@ -97,7 +118,11 @@ describe("AuthView", () => {
 
     it("clears password state when toggling forms", async () => {
       const user = userEvent.setup();
-      render(<AuthView />);
+      render(
+        <TestWrapper>
+          <AuthView />
+        </TestWrapper>,
+      );
 
       // Switch to sign-up and type password
       await user.click(screen.getByRole("button", { name: /sign up/i }));
@@ -138,7 +163,11 @@ describe("AuthView", () => {
   describe("Password visibility toggle", () => {
     it("toggles password visibility in sign-up form", async () => {
       const user = userEvent.setup();
-      render(<AuthView />);
+      render(
+        <TestWrapper>
+          <AuthView />
+        </TestWrapper>,
+      );
 
       await user.click(screen.getByRole("button", { name: /sign up/i }));
 
@@ -158,7 +187,11 @@ describe("AuthView", () => {
 
     it("resets password visibility when toggling forms", async () => {
       const user = userEvent.setup();
-      render(<AuthView />);
+      render(
+        <TestWrapper>
+          <AuthView />
+        </TestWrapper>,
+      );
 
       // Switch to sign-up and show password
       await user.click(screen.getByRole("button", { name: /sign up/i }));
@@ -181,7 +214,11 @@ describe("AuthView", () => {
 
     it("ensures Zod password requirements match interactive requirements count", async () => {
       const user = userEvent.setup();
-      render(<AuthView />);
+      render(
+        <TestWrapper>
+          <AuthView />
+        </TestWrapper>,
+      );
 
       await user.click(screen.getByRole("button", { name: /sign up/i }));
 
@@ -242,7 +279,11 @@ describe("AuthView", () => {
   describe("Form validation", () => {
     it("shows validation errors for empty sign-in form", async () => {
       const user = userEvent.setup();
-      render(<AuthView />);
+      render(
+        <TestWrapper>
+          <AuthView />
+        </TestWrapper>,
+      );
 
       const submitButton = screen.getByRole("button", { name: /sign in/i });
       await user.click(submitButton);
@@ -257,7 +298,11 @@ describe("AuthView", () => {
 
     it("shows validation errors for empty sign-up form", async () => {
       const user = userEvent.setup();
-      render(<AuthView />);
+      render(
+        <TestWrapper>
+          <AuthView />
+        </TestWrapper>,
+      );
 
       await user.click(screen.getByRole("button", { name: /sign up/i }));
 
