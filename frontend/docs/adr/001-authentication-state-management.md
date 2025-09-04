@@ -101,9 +101,8 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (credentials: SignInFormData) => Promise<void>;
-  register: (data: SignUpFormData) => Promise<void>;
   logout: () => Promise<void>;
+  setTokens: (tokens: AuthTokens) => void;
   getAccessToken: () => string | null;
 }
 ```
@@ -112,6 +111,13 @@ interface AuthContextType {
 - **AuthContext.tsx**: Contains only the `AuthProvider` component for React Fast Refresh compatibility
 - **auth.types.ts**: Contains TypeScript interfaces, context creation, and the `useAuth` hook
 - **Imports**: Components import `useAuth` from `auth.types.ts` to avoid circular dependencies
+
+#### Authentication Actions
+Authentication actions (login, register) are handled by dedicated React Query mutation hooks rather than AuthContext methods:
+- **useLoginMutation**: Handles login flow with React Query mutations
+- **useRegisterMutation**: Handles registration flow with React Query mutations
+- **AuthContext focus**: Limited to state management (user, loading, tokens, logout)
+- **Benefits**: Better separation of concerns, improved error handling, optimistic updates
 
 ### Automatic Token Refresh Strategy
 
@@ -176,7 +182,7 @@ if (response.status === 401 && !endpoint.includes('/auth/')) {
 2. **Simplicity**: No additional state management libraries
    - Reduced bundle size
    - Fewer dependencies to maintain
-   - React-native approach
+   - Native React approach
 
 3. **User Experience**: Seamless token refresh
    - Automatic retry on 401 errors
