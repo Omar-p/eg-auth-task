@@ -2,6 +2,11 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  useLoginMutation,
+  useRegisterMutation,
+} from "@/hooks/useAuthMutations";
+import { useMobile } from "@/hooks";
+import {
   signInSchema,
   signUpSchema,
   type SignInFormData,
@@ -78,6 +83,7 @@ const PasswordRequirements = ({ password }: { password: string }) => {
 };
 
 export const AuthView = () => {
+  const isMobile = useMobile();
   const [authMode, setAuthMode] = useState<AuthMode>("signin");
   const [passwordValue, setPasswordValue] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -109,45 +115,67 @@ export const AuthView = () => {
     resetSignUp();
   };
 
+  const loginMutation = useLoginMutation();
+  const registerMutation = useRegisterMutation();
+
   const onSignInSubmit = (data: SignInFormData) => {
-    console.log("Sign In Data:", data);
-    // TODO: Implement sign in logic
+    loginMutation.mutate(data);
   };
 
   const onSignUpSubmit = (data: SignUpFormData) => {
-    console.log("Sign Up Data:", data);
-    // TODO: Implement sign up logic
+    registerMutation.mutate(data, {
+      onSuccess: () => {
+        // Switch to sign-in mode after successful registration
+        setTimeout(() => {
+          handleModeToggle("signin");
+        }, 2000); // Give time for user to read the success message
+      },
+    });
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4 py-8">
-      <div className="w-full max-w-md">
+    <div
+      className={`flex items-center justify-center min-h-screen ${isMobile ? "px-4 py-6" : "px-4 py-8"}`}
+    >
+      <div className={`w-full ${isMobile ? "max-w-sm" : "max-w-md"}`}>
         {/* Logo */}
-        <div className="flex items-center justify-start mb-12">
+        <div
+          className={`flex items-center justify-start ${isMobile ? "mb-8" : "mb-12"}`}
+        >
           <div className="flex items-center space-x-4">
             <Logo />
           </div>
         </div>
 
         {/* Form Card */}
-        <Card className="shadow-2xl bg-white/98 backdrop-blur-sm border border-purple-100/50 rounded-3xl overflow-hidden">
-          <CardHeader className="text-center space-y-4 pb-6 pt-8 bg-gradient-to-br from-blue-50 via-white to-purple-50">
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-brand-primary via-brand-secondary to-brand-accent bg-clip-text text-transparent">
+        <Card
+          className={`shadow-2xl bg-white/98 backdrop-blur-sm border border-purple-100/50 ${isMobile ? "rounded-2xl" : "rounded-3xl"} overflow-hidden`}
+        >
+          <CardHeader
+            className={`text-center space-y-4 ${isMobile ? "pb-4 pt-6" : "pb-6 pt-8"} bg-gradient-to-br from-blue-50 via-white to-purple-50`}
+          >
+            <CardTitle
+              className={`${isMobile ? "text-2xl" : "text-3xl"} font-bold bg-gradient-to-r from-brand-primary via-brand-secondary to-brand-accent bg-clip-text text-transparent`}
+            >
               {isSignUp ? "Join Our Platform" : "Welcome Back"}
             </CardTitle>
-            <CardDescription className="text-lg text-gray-600">
+            <CardDescription
+              className={`${isMobile ? "text-base" : "text-lg"} text-gray-600`}
+            >
               {isSignUp
                 ? "Create your account to get started"
                 : "Sign in to continue your journey"}
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="space-y-6 px-8 pb-8 bg-white">
+          <CardContent
+            className={`space-y-6 ${isMobile ? "px-6 pb-6" : "px-8 pb-8"} bg-white`}
+          >
             {isSignUp ? (
               // Sign Up Form
               <form
                 onSubmit={handleSignUpSubmit(onSignUpSubmit)}
-                className="space-y-6"
+                className={isMobile ? "space-y-4" : "space-y-6"}
               >
                 {/* Name Field */}
                 <div className="space-y-2">
@@ -162,7 +190,7 @@ export const AuthView = () => {
                     type="text"
                     {...registerSignUp("name")}
                     placeholder="Enter your full name"
-                    className={`h-12 px-4 text-base rounded-xl border-2 transition-all duration-300 focus:ring-4 focus:ring-brand-primary/20 focus:border-brand-primary bg-gray-50 focus:bg-white ${signUpErrors.name ? "border-red-400 focus:border-red-500" : "border-gray-200 hover:border-gray-300"}`}
+                    className={`${isMobile ? "h-12" : "h-12"} px-4 ${isMobile ? "text-base" : "text-base"} rounded-xl border-2 transition-all duration-300 focus:ring-4 focus:ring-brand-primary/20 focus:border-brand-primary bg-gray-50 focus:bg-white ${signUpErrors.name ? "border-red-400 focus:border-red-500" : "border-gray-200 hover:border-gray-300"}`}
                   />
                   {signUpErrors.name && (
                     <p className="text-sm text-red-600 flex items-center gap-2 mt-2">
@@ -233,9 +261,12 @@ export const AuthView = () => {
 
                 <Button
                   type="submit"
-                  className="w-full h-14 bg-gradient-to-r from-brand-primary via-brand-secondary to-brand-accent hover:from-brand-secondary hover:to-brand-coral text-white font-semibold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] mt-8 text-lg"
+                  disabled={registerMutation.isPending}
+                  className={`w-full ${isMobile ? "h-12" : "h-14"} bg-gradient-to-r from-brand-primary via-brand-secondary to-brand-accent hover:from-brand-secondary hover:to-brand-coral text-white font-semibold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] ${isMobile ? "mt-6" : "mt-8"} ${isMobile ? "text-base" : "text-lg"}`}
                 >
-                  Create Account 🚀
+                  {registerMutation.isPending
+                    ? "Creating Account..."
+                    : "Create Account 🚀"}
                 </Button>
 
                 <div className="text-center text-sm text-gray-600 mt-6">
@@ -253,7 +284,7 @@ export const AuthView = () => {
               // Sign In Form
               <form
                 onSubmit={handleSignInSubmit(onSignInSubmit)}
-                className="space-y-6"
+                className={isMobile ? "space-y-4" : "space-y-6"}
               >
                 {/* Email Field */}
                 <div className="space-y-2">
@@ -301,9 +332,10 @@ export const AuthView = () => {
 
                 <Button
                   type="submit"
-                  className="w-full h-14 bg-gradient-to-r from-brand-primary via-brand-secondary to-brand-accent hover:from-brand-secondary hover:to-brand-coral text-white font-semibold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] mt-8 text-lg"
+                  disabled={loginMutation.isPending}
+                  className={`w-full ${isMobile ? "h-12" : "h-14"} bg-gradient-to-r from-brand-primary via-brand-secondary to-brand-accent hover:from-brand-secondary hover:to-brand-coral text-white font-semibold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] ${isMobile ? "mt-6" : "mt-8"} ${isMobile ? "text-base" : "text-lg"}`}
                 >
-                  Sign In ✨
+                  {loginMutation.isPending ? "Signing In..." : "Sign In ✨"}
                 </Button>
 
                 <div className="text-center text-sm text-gray-600 mt-6">
