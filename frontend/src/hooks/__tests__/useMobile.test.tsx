@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { vi } from "vitest";
-import { useMobile } from "../useMobile";
+import { useMobile } from "@/hooks";
 
 // Mock window.matchMedia
 const mockMatchMedia = vi.fn();
