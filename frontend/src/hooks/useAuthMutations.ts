@@ -22,8 +22,6 @@ export const useLoginMutation = () => {
         description: "You have been successfully signed in.",
         duration: 4000,
       });
-
-      window.location.reload();
     },
     onError: (error: Error) => {
       toast.error("Sign in failed", {
