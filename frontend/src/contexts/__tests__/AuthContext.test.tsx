@@ -1,10 +1,6 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { AuthProvider } from "../AuthContext";
 import { useAuth } from "../auth.types";
-import {
-  SignInFormData,
-  SignUpFormData,
-} from "@/views/containers/auth/auth.types";
 import { vi } from "vitest";
 
 // Mock the auth API
@@ -73,11 +69,9 @@ describe("AuthContext", () => {
 
   it("should restore user from localStorage on initialization", async () => {
     const { authAPI } = await import("@/services/auth-api");
-    const mockAuthAPI = authAPI as {
-      login: ReturnType<typeof vi.fn>;
-      register: ReturnType<typeof vi.fn>;
-      logout: ReturnType<typeof vi.fn>;
+    const mockAuthAPI = (authAPI as unknown) as {
       refreshToken: ReturnType<typeof vi.fn>;
+      logout: ReturnType<typeof vi.fn>;
     };
 
     // Mock successful refresh
@@ -108,11 +102,9 @@ describe("AuthContext", () => {
 
   it("should handle failed refresh on initialization", async () => {
     const { authAPI } = await import("@/services/auth-api");
-    const mockAuthAPI = authAPI as {
-      login: ReturnType<typeof vi.fn>;
-      register: ReturnType<typeof vi.fn>;
-      logout: ReturnType<typeof vi.fn>;
+    const mockAuthAPI = (authAPI as unknown) as {
       refreshToken: ReturnType<typeof vi.fn>;
+      logout: ReturnType<typeof vi.fn>;
     };
 
     // Mock failed refresh
@@ -154,101 +146,11 @@ describe("AuthContext", () => {
     expect(result.current.getAccessToken()).toBe(null);
   });
 
-  it("should perform login successfully", async () => {
-    const { authAPI } = await import("@/services/auth-api");
-    const mockAuthAPI = authAPI as {
-      login: ReturnType<typeof vi.fn>;
-      register: ReturnType<typeof vi.fn>;
-      logout: ReturnType<typeof vi.fn>;
-      refreshToken: ReturnType<typeof vi.fn>;
-    };
-
-    const mockUser = {
-      id: "123",
-      name: "John Doe",
-      email: "test@example.com",
-    };
-
-    const mockResponse = {
-      user: mockUser,
-      access_token: "mock_access_token_123",
-    };
-
-    mockAuthAPI.login.mockResolvedValue(mockResponse);
-
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    const credentials: SignInFormData = {
-      email: "test@example.com",
-      password: "password123",
-    };
-
-    await act(async () => {
-      await result.current.login(credentials);
-    });
-
-    expect(mockAuthAPI.login).toHaveBeenCalledWith(credentials);
-    expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.user).toEqual(mockUser);
-    expect(result.current.isLoading).toBe(false);
-
-    // Check that access token is available via getAccessToken (stored in memory)
-    expect(result.current.getAccessToken()).toBe("mock_access_token_123");
-    // No tokens stored in localStorage (access token is in memory only)
-    expect(mockLocalStorage.getItem("access_token")).toBe(null);
-    expect(mockLocalStorage.getItem("refresh_token")).toBe(null);
-    expect(JSON.parse(mockLocalStorage.getItem("user_data")!)).toEqual(
-      mockUser,
-    );
-  });
-
-  it("should perform registration successfully", async () => {
-    const { authAPI } = await import("@/services/auth-api");
-    const mockAuthAPI = authAPI as {
-      login: ReturnType<typeof vi.fn>;
-      register: ReturnType<typeof vi.fn>;
-      logout: ReturnType<typeof vi.fn>;
-      refreshToken: ReturnType<typeof vi.fn>;
-    };
-
-    const mockRegistrationResponse = {
-      message: "User created successfully",
-      userId: "507f1f77bcf86cd799439011",
-    };
-
-    mockAuthAPI.register.mockResolvedValue(mockRegistrationResponse);
-
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    const registrationData: SignUpFormData = {
-      name: "New User",
-      email: "new@example.com",
-      password: "password123!",
-    };
-
-    await act(async () => {
-      await result.current.register(registrationData);
-    });
-
-    expect(mockAuthAPI.register).toHaveBeenCalledWith(registrationData);
-
-    // Registration should not authenticate the user - they need to sign in manually
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.user).toBe(null);
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.getAccessToken()).toBe(null);
-
-    // No user data should be stored since registration doesn't log in the user
-    expect(mockLocalStorage.getItem("user_data")).toBe(null);
-  });
-
   it("should logout and clear all data", async () => {
     const { authAPI } = await import("@/services/auth-api");
-    const mockAuthAPI = authAPI as {
-      login: ReturnType<typeof vi.fn>;
-      register: ReturnType<typeof vi.fn>;
-      logout: ReturnType<typeof vi.fn>;
+    const mockAuthAPI = (authAPI as unknown) as {
       refreshToken: ReturnType<typeof vi.fn>;
+      logout: ReturnType<typeof vi.fn>;
     };
 
     mockAuthAPI.logout.mockResolvedValue(undefined);
@@ -323,43 +225,5 @@ describe("AuthContext", () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     expect(result.current.getAccessToken()).toBe(null);
-  });
-
-  it("should handle loading state during login", async () => {
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    const credentials: SignInFormData = {
-      email: "test@example.com",
-      password: "password123",
-    };
-
-    const loginPromise = act(async () => {
-      await result.current.login(credentials);
-    });
-
-    // Check loading state is managed properly
-    expect(result.current.isLoading).toBe(false); // Initial state after mount
-
-    await loginPromise;
-
-    expect(result.current.isLoading).toBe(false); // Should be false after completion
-  });
-
-  it("should handle loading state during registration", async () => {
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    const registrationData: SignUpFormData = {
-      name: "New User",
-      email: "new@example.com",
-      password: "password123!",
-    };
-
-    const registerPromise = act(async () => {
-      await result.current.register(registrationData);
-    });
-
-    await registerPromise;
-
-    expect(result.current.isLoading).toBe(false);
   });
 });

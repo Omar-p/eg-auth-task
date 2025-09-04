@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setAccessToken(refreshResponse.accessToken);
           } catch {
             // Refresh failed, but keep user data for re-login
-            console.log("Token refresh failed on app load");
+            console.error("Token refresh failed on app load");
           }
         } catch {
           localStorage.removeItem("user_data");
@@ -47,32 +47,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return accessToken;
   };
 
-  const login = async (credentials: SignInFormData) => {
-    setIsLoading(true);
-    try {
-      const { authAPI } = await import("@/services/auth-api");
-      const response = await authAPI.login(credentials);
-
-      setTokens({ access_token: response.access_token });
-      localStorage.setItem("user_data", JSON.stringify(response.user));
-      setUser(response.user);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const register = async (data: SignUpFormData) => {
-    setIsLoading(true);
-    try {
-      const { authAPI } = await import("@/services/auth-api");
-      await authAPI.register(data);
-      // Registration successful - user needs to sign in manually
-      // The UI will handle showing success message and switching to sign-in
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const logout = async () => {
     try {
       const { authAPI } = await import("@/services/auth-api");
@@ -90,8 +64,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     user,
     isAuthenticated: !!user,
     isLoading,
-    login,
-    register,
     logout,
     setTokens,
     getAccessToken,
