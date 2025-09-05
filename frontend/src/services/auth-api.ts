@@ -31,6 +31,7 @@ class AuthAPI {
   private refreshPromise: Promise<string | null> | null = null;
   private getAccessToken: () => string | null = () => null;
   private setAccessToken: (token: string | null) => void = () => {};
+  private onLogout: () => void = () => {};
 
   setTokenGetter(getter: () => string | null) {
     this.getAccessToken = getter;
@@ -38,6 +39,10 @@ class AuthAPI {
 
   setTokenSetter(setter: (token: string | null) => void) {
     this.setAccessToken = setter;
+  }
+
+  setLogoutHandler(handler: () => void) {
+    this.onLogout = handler;
   }
 
   public async request<T>(
@@ -97,6 +102,7 @@ class AuthAPI {
       return accessToken;
     } catch {
       this.setAccessToken(null);
+      this.onLogout();
       return null;
     }
   }

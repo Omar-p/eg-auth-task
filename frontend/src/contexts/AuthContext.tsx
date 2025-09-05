@@ -15,9 +15,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const accessTokenRef = useRef(accessToken);
   accessTokenRef.current = accessToken;
 
+  const clearAuthState = () => {
+    setAccessToken(null);
+    localStorage.removeItem("user_data");
+    setUser(null);
+  };
+
   useEffect(() => {
     authAPI.setTokenGetter(() => accessTokenRef.current);
     authAPI.setTokenSetter((token) => setAccessToken(token));
+    authAPI.setLogoutHandler(clearAuthState);
   }, []);
 
   useEffect(() => {
@@ -36,6 +43,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setAccessToken(refreshResponse.accessToken);
           } catch {
             console.error("Token refresh failed on app load");
+            // Clear user state if refresh fails during initialization
+            clearAuthState();
           }
         } catch (error) {
           console.error("Failed to parse user data from localStorage:", error);
