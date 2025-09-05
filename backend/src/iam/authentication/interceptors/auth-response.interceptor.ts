@@ -38,7 +38,10 @@ export class AuthResponseInterceptor implements NestInterceptor {
 
             response.cookie('refresh_token', data.refreshToken, cookieOptions);
             this.logger.debug('Refresh token cookie set successfully');
-            const { refreshToken: _, ...responseWithoutRefreshToken } = data;
+            const {
+              refreshToken: _refreshToken,
+              ...responseWithoutRefreshToken
+            } = data;
             return responseWithoutRefreshToken;
           }
 
@@ -50,7 +53,7 @@ export class AuthResponseInterceptor implements NestInterceptor {
 
             response.clearCookie('refresh_token', cookieOptions);
             this.logger.debug('Refresh token cookie cleared successfully');
-            const { clearCookie: _, ...responseWithoutFlag } = data;
+            const { clearCookie: _clearCookie, ...responseWithoutFlag } = data;
             return responseWithoutFlag;
           }
 
@@ -61,7 +64,7 @@ export class AuthResponseInterceptor implements NestInterceptor {
   }
 
   private getCookieOptions(): CookieOptions {
-    const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
+    // const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
     const cookieDomain = this.configService.get<string>('COOKIE_DOMAIN');
     const cookieSecure =
       this.configService.get<string>('COOKIE_SECURE', 'false') === 'true';

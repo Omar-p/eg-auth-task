@@ -13,6 +13,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiHeader,
 } from '@nestjs/swagger';
 import { AuthenticationService } from './authentication.service';
 import { SignUpDto } from './dto/sign-up.dto/sign-up.dto';
@@ -127,20 +128,28 @@ export class AuthenticationController {
     return this.authenticationService.logout(refreshToken);
   }
 
-  @Delete('/logout-all')
+  @Delete('/sessions')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Logout from all devices' })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer token for authentication',
+    required: true,
+    example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  })
+  @ApiOperation({
+    summary: 'Delete all user sessions (logout from all devices)',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Successfully logged out from all devices',
+    description: 'Successfully deleted all user sessions',
     schema: {
       example: {
-        message: 'Logged out from 3 devices',
+        message: 'Deleted 3 sessions',
       },
     },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  logoutFromAllDevices(@CurrentUser() user: AuthUser) {
-    return this.authenticationService.logoutFromAllDevices(user.id);
+  deleteSessions(@CurrentUser() user: AuthUser) {
+    return this.authenticationService.deleteAllSessions(user.id);
   }
 }
