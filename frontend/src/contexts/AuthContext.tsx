@@ -50,6 +50,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const setTokens = (tokens: AuthTokens) => {
     setAccessToken(tokens.access_token);
+    // Get user data from localStorage that was set during login
+    const userData = localStorage.getItem("user_data");
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error("Failed to parse user data during setTokens:", error);
+      }
+    }
   };
 
   const getAccessToken = (): string | null => {

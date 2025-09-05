@@ -116,7 +116,9 @@ export const AuthView = () => {
   };
 
   const loginMutation = useLoginMutation();
-  const registerMutation = useRegisterMutation();
+  const registerMutation = useRegisterMutation(() => {
+    handleModeToggle("signin");
+  });
 
   const onSignInSubmit = (data: SignInFormData) => {
     loginMutation.mutate(data);

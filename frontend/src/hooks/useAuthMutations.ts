@@ -13,10 +13,10 @@ export const useLoginMutation = () => {
   return useMutation({
     mutationFn: (credentials: SignInFormData) => authAPI.login(credentials),
     onSuccess: (response) => {
+      localStorage.setItem("user_data", JSON.stringify(response.user));
       setTokens({
         access_token: response.access_token,
       });
-      localStorage.setItem("user_data", JSON.stringify(response.user));
 
       toast.success("Welcome back!", {
         description: "You have been successfully signed in.",
@@ -32,7 +32,7 @@ export const useLoginMutation = () => {
   });
 };
 
-export const useRegisterMutation = () => {
+export const useRegisterMutation = (onSuccess?: () => void) => {
   return useMutation({
     mutationFn: (data: SignUpFormData) => authAPI.register(data),
     onSuccess: () => {
@@ -41,7 +41,7 @@ export const useRegisterMutation = () => {
         duration: 5000,
       });
 
-      // The UI should handle switching to sign-in mode
+      onSuccess?.();
     },
     onError: (error: Error) => {
       toast.error("Registration failed", {
