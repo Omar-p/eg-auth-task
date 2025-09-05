@@ -13,8 +13,8 @@ export const useAnimalFacts = () => {
   } = useQuery<AnimalFact>({
     queryKey: ["animalFacts"],
     queryFn: () => animalFactsAPI.getDailyAnimalFact(),
-    staleTime: 1000 * 60 * 60, // 1 hour
-    refetchInterval: 1000 * 60 * 60, // Check every hour for updates
+    staleTime: Infinity, // The data is fresh until it expires
+    refetchInterval: false, // Countdown logic handles refetching
   });
 
   useEffect(() => {

@@ -40,25 +40,12 @@ export const WelcomeView = () => {
 
             {/* Daily Animal Fact */}
             <div className="mt-8">
-              {animalFact ? (
-                <AnimalFactCard
-                  animalFact={animalFact}
-                  timeLeft={timeLeft}
-                  isLoading={false}
-                  onRefresh={refetch}
-                />
-              ) : (
-                <AnimalFactCard
-                  animalFact={{
-                    animal: "Loading",
-                    fact: "Loading your daily animal fact...",
-                    date: new Date().toISOString().split("T")[0],
-                    expiresAt: new Date().toISOString(),
-                  }}
-                  timeLeft="--:--:--"
-                  isLoading={isLoading}
-                />
-              )}
+              <AnimalFactCard
+                animalFact={animalFact}
+                timeLeft={timeLeft}
+                isLoading={isLoading}
+                onRefresh={refetch}
+              />
             </div>
           </div>
         </div>

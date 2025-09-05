@@ -2,7 +2,7 @@ import { AnimalIcon, CountdownTimer } from "@atoms";
 import type { AnimalFact } from "@/services/animal-facts-api";
 
 interface AnimalFactCardProps {
-  animalFact: AnimalFact;
+  animalFact?: AnimalFact;
   timeLeft: string;
   isLoading?: boolean;
   onRefresh?: () => void;
@@ -14,7 +14,7 @@ export const AnimalFactCard = ({
   isLoading = false,
   onRefresh,
 }: AnimalFactCardProps) => {
-  if (isLoading) {
+  if (isLoading || !animalFact) {
     return (
       <div className="p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200/50">
         <div className="flex items-center justify-center">
@@ -52,7 +52,10 @@ export const AnimalFactCard = ({
         </div>
 
         <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>Updated: {new Date(animalFact.date).toLocaleDateString()}</span>
+          <span>
+            Updated:{" "}
+            {new Date(animalFact.date + "T00:00:00").toLocaleDateString()}
+          </span>
           {onRefresh && (
             <button
               onClick={onRefresh}
