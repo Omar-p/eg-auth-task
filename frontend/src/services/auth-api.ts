@@ -100,7 +100,8 @@ class AuthAPI {
       const { accessToken } = await this.refreshToken();
       this.setAccessToken(accessToken);
       return accessToken;
-    } catch {
+    } catch (error) {
+      console.error("Token refresh attempt failed:", error);
       this.setAccessToken(null);
       this.onLogout();
       return null;

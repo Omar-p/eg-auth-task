@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import type { User, AuthTokens, AuthContextType } from "./auth.types";
 import { AuthContext } from "./auth.types";
 import { authAPI } from "@/services/auth-api";
@@ -15,17 +15,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const accessTokenRef = useRef(accessToken);
   accessTokenRef.current = accessToken;
 
-  const clearAuthState = () => {
+  const clearAuthState = useCallback(() => {
     setAccessToken(null);
     localStorage.removeItem("user_data");
     setUser(null);
-  };
+  }, []);
 
   useEffect(() => {
     authAPI.setTokenGetter(() => accessTokenRef.current);
-    authAPI.setTokenSetter((token) => setAccessToken(token));
+    authAPI.setTokenSetter(setAccessToken);
     authAPI.setLogoutHandler(clearAuthState);
-  }, []);
+  }, [clearAuthState]);
 
   useEffect(() => {
     const initializeAuth = async () => {
