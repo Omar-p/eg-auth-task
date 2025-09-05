@@ -431,7 +431,7 @@ describe('Authentication Integration Tests', () => {
     });
   });
 
-  describe('DELETE /api/auth/logout-all', () => {
+  describe('DELETE /api/auth/sessions', () => {
     let accessToken: string;
     let refreshTokenCookies: string[] = [];
 
@@ -465,20 +465,20 @@ describe('Authentication Integration Tests', () => {
       refreshTokenCookies = [];
     });
 
-    it('should logout user from all devices and revoke all refresh tokens', async () => {
+    it('should delete all user sessions and revoke all refresh tokens', async () => {
       // Verify we have 3 active refresh tokens before logout-all
       const activeTokensBefore = await refreshTokenModel.find({ isRevoked: false });
       expect(activeTokensBefore).toHaveLength(3);
 
-      // Call logout-all endpoint
+      // Call sessions delete endpoint
       const response = await request(app.getHttpServer())
-        .delete('/api/auth/logout-all')
+        .delete('/api/auth/sessions')
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
       // Check response format
       expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toMatch(/logged out from \d+ device/i);
+      expect(response.body.message).toMatch(/deleted \d+ session/i);
 
       // Verify all refresh tokens are now revoked
       const activeTokensAfter = await refreshTokenModel.find({ isRevoked: false });
@@ -494,10 +494,10 @@ describe('Authentication Integration Tests', () => {
       });
     });
 
-    it('should prevent refresh token usage after logout-all', async () => {
-      // Call logout-all
+    it('should prevent refresh token usage after sessions delete', async () => {
+      // Call sessions delete
       await request(app.getHttpServer())
-        .delete('/api/auth/logout-all')
+        .delete('/api/auth/sessions')
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
@@ -510,27 +510,27 @@ describe('Authentication Integration Tests', () => {
       }
     });
 
-    it('should reject logout-all without valid access token', async () => {
+    it('should reject sessions delete without valid access token', async () => {
       await request(app.getHttpServer())
-        .delete('/api/auth/logout-all')
+        .delete('/api/auth/sessions')
         .expect(401);
     });
 
-    it('should reject logout-all with invalid access token', async () => {
+    it('should reject sessions delete with invalid access token', async () => {
       await request(app.getHttpServer())
-        .delete('/api/auth/logout-all')
+        .delete('/api/auth/sessions')
         .set('Authorization', 'Bearer invalid_token_here')
         .expect(401);
     });
 
-    it('should work correctly even when user has no active sessions', async () => {
-      // First logout from all devices
+    it('should work correctly when user has no active sessions', async () => {
+      // First delete all sessions
       await request(app.getHttpServer())
-        .delete('/api/auth/logout-all')
+        .delete('/api/auth/sessions')
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
-      // Create a new session to test logout-all on user with no existing sessions
+      // Create a new session to test sessions delete on user with no existing sessions
       const newSignInResponse = await request(app.getHttpServer())
         .post('/api/auth/sign-in')
         .send({
@@ -540,16 +540,16 @@ describe('Authentication Integration Tests', () => {
 
       const newAccessToken = newSignInResponse.body.accessToken;
 
-      // Call logout-all again - should work and report 1 device
+      // Call sessions delete again - should work and report 1 session
       const response = await request(app.getHttpServer())
-        .delete('/api/auth/logout-all')
+        .delete('/api/auth/sessions')
         .set('Authorization', `Bearer ${newAccessToken}`)
         .expect(200);
 
-      expect(response.body.message).toMatch(/logged out from 1 device/i);
+      expect(response.body.message).toMatch(/deleted 1 session/i);
     });
 
-    it('should only revoke tokens for the authenticated user, not other users', async () => {
+    it('should only delete sessions for the authenticated user, not other users', async () => {
       // Create second user
       await request(app.getHttpServer()).post('/api/auth/sign-up').send({
         email: 'test2@example.com',
@@ -571,9 +571,9 @@ describe('Authentication Integration Tests', () => {
       const allTokensBefore = await refreshTokenModel.find({ isRevoked: false });
       expect(allTokensBefore.length).toBeGreaterThan(1); // At least 1 for each user
 
-      // User 1 calls logout-all
+      // User 1 calls sessions delete
       await request(app.getHttpServer())
-        .delete('/api/auth/logout-all')
+        .delete('/api/auth/sessions')
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
@@ -584,9 +584,9 @@ describe('Authentication Integration Tests', () => {
         .set('Cookie', user2RefreshCookie)
         .expect(200);
 
-      // User 2 should still be able to call logout-all
+      // User 2 should still be able to call sessions delete
       await request(app.getHttpServer())
-        .delete('/api/auth/logout-all')
+        .delete('/api/auth/sessions')
         .set('Authorization', `Bearer ${user2AccessToken}`)
         .expect(200);
     });
