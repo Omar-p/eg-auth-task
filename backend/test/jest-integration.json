@@ -1,0 +1,15 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".integration.spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "modulePathIgnorePatterns": ["<rootDir>/dist/"],
+  "setupFilesAfterEnv": ["<rootDir>/jest.setup.ts"],
+  "testTimeout": 180000,
+  "maxWorkers": 1,
+  "forceExit": false,
+  "detectOpenHandles": true
+}

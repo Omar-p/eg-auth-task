@@ -35,7 +35,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       status = exception.getStatus();
       message = exception.getResponse();
     } else if (this.isMongoError(exception)) {
-      const result = this.handleMongoError(exception as MongoError);
+      const result = this.handleMongoError(exception);
       status = result.status;
       message = result.message;
       mongoError = result.mongoError;

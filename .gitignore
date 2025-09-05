@@ -1,0 +1,35 @@
+ts-notes.md
+
+# Environment files with secrets
+.env
+.env.local
+.env.production
+
+# Keep environment templates
+!.env.example
+!.env.development
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AWS
+.aws/
+
+# Docker
+.dockerignore

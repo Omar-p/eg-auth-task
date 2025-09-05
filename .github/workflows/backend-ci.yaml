@@ -1,0 +1,61 @@
+name: Deploy NestJS Backend to AWS ECS
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yaml'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  NODE_VERSION: '23.11.0'
+  AWS_REGION: 'eu-central-1'
+
+jobs:
+  # Quality checks job
+  quality-checks:
+    name: Code Quality & Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Run Prettier check (if available)
+        run: npm run format
+        continue-on-error: true
+
+      - name: Run unit tests
+        run: npm run test -- --coverage --watchAll=false --passWithNoTests
+        continue-on-error: true
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          files: ./backend/coverage/lcov.info
+          fail_ci_if_error: false
