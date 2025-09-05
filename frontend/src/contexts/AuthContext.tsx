@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
 
     initializeAuth();
-  }, []);
+  }, [clearAuthState]);
 
   const setTokens = (tokens: AuthTokens) => {
     setAccessToken(tokens.access_token);
