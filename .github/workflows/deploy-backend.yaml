@@ -112,7 +112,6 @@ jobs:
           docker push $IMAGE_URI
           docker push $LATEST_URI
           
-          # Split image URI to avoid secret detection
           echo "image-tag=${TAG}" >> $GITHUB_OUTPUT
           echo "registry=${REGISTRY}" >> $GITHUB_OUTPUT
           echo "repository=${REPOSITORY}" >> $GITHUB_OUTPUT
@@ -157,8 +156,7 @@ jobs:
           role-session-name: GitHubActions-backend-deploy
 
       - name: Deploy to ECS
-        run: |          
-          # Construct image URI from components
+        run: |
           REGISTRY="${{ needs.build-and-push.outputs.registry }}"
           REPOSITORY="${{ needs.build-and-push.outputs.repository }}"
           TAG="${{ needs.build-and-push.outputs.image-tag }}"
