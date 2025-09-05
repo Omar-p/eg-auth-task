@@ -18,7 +18,7 @@ export default registerAs('database', () => {
 
   // For production DocumentDB, add query parameters in URI (match AWS docs format)
   if (process.env.NODE_ENV === 'production') {
-    uri += `?tls=true&tlsCAFile=/opt/global-bundle.pem&retryWrites=false&serverSelectionTimeoutMS=5000&connectTimeoutMS=10000`;
+    uri += `?tls=true&tlsCAFile=/opt/global-bundle.pem&retryWrites=false&authMechanism=SCRAM-SHA-1&authSource=admin&serverSelectionTimeoutMS=5000&connectTimeoutMS=10000`;
   }
 
   // Add connection options
