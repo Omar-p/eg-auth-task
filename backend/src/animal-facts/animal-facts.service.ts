@@ -7,7 +7,7 @@ import { AnimalFact, DailyAnimalCache } from './interfaces/animal-fact.interface
 export class AnimalFactsService {
   private readonly logger = new Logger(AnimalFactsService.name);
   private readonly bedrockClient: BedrockRuntimeClient;
-  private cache: Map<string, DailyAnimalCache> = new Map();
+  private cache: DailyAnimalCache | null = null;
 
   private readonly animals = [
     'Lion', 'Tiger', 'Elephant', 'Giraffe', 'Penguin',
@@ -34,7 +34,7 @@ export class AnimalFactsService {
     return new Date().toISOString().split('T')[0];
   }
 
-  private getRandomAnimal(): string {
+  private getAnimalForDay(): string {
     const now = new Date();
     const startOfYear = Date.UTC(now.getUTCFullYear(), 0, 1);
     const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
@@ -82,46 +82,64 @@ export class AnimalFactsService {
       const responseBody = JSON.parse(responseBodyString);
 
       // Titan response format
-      if (!responseBody.results || !responseBody.results[0] || !responseBody.results[0].outputText) {
-        throw new Error(`Unexpected response structure: ${JSON.stringify(responseBody)}`);
+      const fact = responseBody?.results?.[0]?.outputText;
+      if (typeof fact !== 'string' || fact.length === 0) {
+        throw new Error(`Unexpected response structure or empty fact: ${JSON.stringify(responseBody)}`);
       }
 
-      const fact = responseBody.results[0].outputText.trim();
+      const cleanedFact = fact.trim();
       this.logger.log(`Successfully generated fact for ${animal}`);
 
-      return fact;
+      return cleanedFact;
     } catch (error) {
       this.logger.error(`Failed to generate fact for ${animal}: ${error.message}`);
+      
+      // Log specific AWS Bedrock errors
+      if (error.name === 'AccessDeniedException') {
+        this.logger.error('AWS Bedrock Access Denied - check IAM permissions');
+      } else if (error.name === 'ValidationException') {
+        this.logger.error('AWS Bedrock Validation Error - check model ID and payload format');
+      } else if (error.name === 'ThrottlingException') {
+        this.logger.error('AWS Bedrock request throttled - too many requests');
+      } else if (error.name === 'ServiceUnavailableException') {
+        this.logger.error('AWS Bedrock service temporarily unavailable');
+      } else if (error.name === 'ResourceNotFoundException') {
+        this.logger.error('AWS Bedrock model not found - check model ID and region');
+      }
+      
+      // Log error metadata if available
+      if (error.$metadata) {
+        this.logger.error(`AWS Bedrock error metadata: ${JSON.stringify(error.$metadata)}`);
+      }
+      
       return `${animal} is an amazing creature with many fascinating characteristics that make it unique in the animal kingdom.`;
     }
   }
 
   async getDailyAnimalFact(): Promise<AnimalFact> {
     const todayKey = this.getTodayKey();
-    let cached = this.cache.get(todayKey);
 
-    if (!cached || cached.expiresAt < new Date()) {
-      const selectedAnimal = this.getRandomAnimal();
-      cached = {
+    if (!this.cache || this.cache.date !== todayKey) {
+      this.logger.log(`New daily animal fact needed for ${todayKey}`);
+      const selectedAnimal = this.getAnimalForDay();
+      this.cache = {
         selectedAnimal,
         date: todayKey,
         expiresAt: this.createExpiryDate(),
       };
-      this.cache.set(todayKey, cached);
       this.logger.log(`Selected new animal for ${todayKey}: ${selectedAnimal}`);
     }
 
-    if (!cached.fact) {
-      this.logger.log(`Generating fact for ${cached.selectedAnimal}`);
-      cached.fact = await this.generateFactFromBedrock(cached.selectedAnimal);
-      this.cache.set(todayKey, cached);
+    if (!this.cache.fact) {
+      this.logger.log(`Generating fact for ${this.cache.selectedAnimal}`);
+      this.cache.fact = await this.generateFactFromBedrock(this.cache.selectedAnimal);
     }
 
     return {
-      animal: cached.selectedAnimal,
-      fact: cached.fact,
-      date: cached.date,
-      expiresAt: cached.expiresAt,
+      animal: this.cache.selectedAnimal,
+      fact: this.cache.fact!,
+      date: this.cache.date,
+      expiresAt: this.cache.expiresAt,
     };
   }
 

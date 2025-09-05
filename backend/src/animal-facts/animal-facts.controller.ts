@@ -24,7 +24,7 @@ export class AnimalFactsController {
     }
   })
   async getDailyFact(): Promise<AnimalFact> {
-    return await this.animalFactsService.getDailyAnimalFact();
+    return this.animalFactsService.getDailyAnimalFact();
   }
 
 }
