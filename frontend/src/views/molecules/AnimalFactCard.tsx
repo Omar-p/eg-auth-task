@@ -29,14 +29,16 @@ export const AnimalFactCard = ({
 
   return (
     <div className="p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200/50">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
           <AnimalIcon animal={animalFact.animal} size="md" />
           <h3 className="text-lg font-semibold text-gray-800">
             Daily Animal Fact
           </h3>
         </div>
-        <CountdownTimer timeLeft={timeLeft} />
+        <div className="flex justify-center sm:justify-end">
+          <CountdownTimer timeLeft={timeLeft} />
+        </div>
       </div>
 
       <div className="space-y-3">
