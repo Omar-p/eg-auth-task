@@ -206,7 +206,7 @@ describe('Authentication Integration Tests', () => {
 
   beforeAll(async () => {
     // Start real MongoDB container
-    mongoContainer = new MongoDBContainer('mongo:7.0.12')
+    mongoContainer = new MongoDBContainer('mongo:8.0.13')
       .withExposedPorts(27017)
       .withStartupTimeout(120000);
     
