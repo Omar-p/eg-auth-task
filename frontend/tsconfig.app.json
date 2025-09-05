@@ -22,6 +22,8 @@
       "@/*": ["./src/*"],
       "@atoms": ["./src/views/atoms"],
       "@atoms/*": ["./src/views/atoms/*"],
+      "@molecules": ["./src/views/molecules"],
+      "@molecules/*": ["./src/views/molecules/*"],
       "@components": ["./src/views/components"],
       "@components/*": ["./src/views/components/*"],
       "@containers": ["./src/views/containers"],
