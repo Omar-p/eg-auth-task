@@ -16,20 +16,35 @@ export default registerAs('database', () => {
 
   uri += `${host}:${port}/${database}`;
 
-  // For production DocumentDB, add query parameters in URI
+  // For production DocumentDB, add query parameters in URI (match AWS docs format)
   if (process.env.NODE_ENV === 'production') {
-    uri += `?tls=true&tlsCAFile=/opt/global-bundle.pem&retryWrites=false&authSource=admin`;
+    uri += `?tls=true&tlsCAFile=/opt/global-bundle.pem&retryWrites=false&serverSelectionTimeoutMS=5000&connectTimeoutMS=10000`;
   }
 
   // Add connection options
   const options = {
-    w: 'majority',
-    // For local development with MongoDB admin user
+    // For production DocumentDB, minimal options as per AWS docs
+    ...(process.env.NODE_ENV === 'production' && {
+      w: 'majority',
+      ssl: true,
+    }),
+    // For local development with MongoDB
     ...(process.env.NODE_ENV !== 'production' && {
       authSource: 'admin',
-      retryWrites: true, // MongoDB supports retryWrites
+      retryWrites: true,
+      w: 'majority',
     }),
   };
+
+  // Log connection details (without sensitive info) for debugging
+  console.log('Database Configuration:', {
+    host,
+    port: parseInt(port, 10),
+    database,
+    username: username ? '[REDACTED]' : 'none',
+    nodeEnv: process.env.NODE_ENV,
+    uriPattern: uri.replace(password || '', '[REDACTED]')
+  });
 
   return {
     uri,
