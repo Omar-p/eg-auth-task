@@ -12,7 +12,6 @@ export interface IRefreshToken extends Document {
   };
   isRevoked: boolean;
   revokedAt?: Date;
-  lastUsedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

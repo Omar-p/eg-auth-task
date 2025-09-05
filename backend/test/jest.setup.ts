@@ -6,4 +6,4 @@ beforeAll(() => {
 });
 
 // Increase timeout for container startup
-jest.setTimeout(180000);
+jest.setTimeout(60000);

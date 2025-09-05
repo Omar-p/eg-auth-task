@@ -40,9 +40,6 @@ export class RefreshToken extends Document {
   @Prop()
   revokedAt?: Date;
 
-  @Prop()
-  lastUsedAt?: Date;
-
   createdAt: Date;
   updatedAt: Date;
 }

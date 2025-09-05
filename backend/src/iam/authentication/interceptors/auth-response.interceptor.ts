@@ -74,24 +74,9 @@ export class AuthResponseInterceptor implements NestInterceptor {
       604800,
     );
 
-    const isProduction = nodeEnv === 'production';
-    const isDocker =
-      process.env.DOCKER_CONTAINER === 'true' ||
-      process.env.HOSTNAME?.includes('docker');
-
-    let domain: string | undefined;
-    let secure: boolean;
-    let sameSite: 'strict' | 'lax' | 'none';
-
-    if (isProduction) {
-      domain = cookieDomain;
-      secure = cookieSecure;
-      sameSite = cookieSameSite || 'lax';
-    } else {
-      domain = cookieDomain;
-      secure = cookieSecure;
-      sameSite = cookieSameSite || 'lax';
-    }
+    const domain = cookieDomain;
+    const secure = cookieSecure;
+    const sameSite = cookieSameSite || 'lax';
 
     return {
       httpOnly: true,

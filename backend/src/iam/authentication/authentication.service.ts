@@ -287,7 +287,7 @@ export class AuthenticationService {
     try {
       log.start();
       const refreshTokenDoc = new this.refreshTokenModel({
-        userId: user._id.toString(),
+        userId: user._id,
         tokenHash,
         expiresAt: new Date(Date.now() + this.jwtConfiguration.refreshTokenTtl),
         deviceInfo: deviceInfo || {},
