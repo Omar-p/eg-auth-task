@@ -37,7 +37,7 @@ export const useAnimalFacts = () => {
         );
       } else {
         setTimeLeft("00:00:00");
-        // Refetch when expired
+        clearInterval(timer);
         refetch();
       }
     };

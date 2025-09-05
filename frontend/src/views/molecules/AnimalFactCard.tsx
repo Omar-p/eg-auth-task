@@ -54,7 +54,7 @@ export const AnimalFactCard = ({
         <div className="flex items-center justify-between text-xs text-gray-500">
           <span>
             Updated:{" "}
-            {new Date(animalFact.date + "T00:00:00").toLocaleDateString()}
+            {new Date(animalFact.date + "T00:00:00Z").toLocaleDateString()}
           </span>
           {onRefresh && (
             <button
