@@ -186,76 +186,34 @@ Once running, visit https://be.easygenerator.omarshabaan.tech/api/docs for inter
 ## 🔄 CI/CD Pipeline
 
 ### GitHub Actions Workflows
+The project uses automated CI/CD with separate pipelines for frontend and backend:
 
-The project uses GitHub Actions for automated CI/CD with separate workflows for frontend and backend:
-
-#### **Frontend Pipeline** (`.github/workflows/frontend-ci.yaml` & `deploy-frontend.yaml`)
+#### **Frontend Pipeline**
 - **Triggers**: Pull requests and pushes to `main` branch (frontend changes only)
-- **CI Steps**:
-  - Code quality checks (ESLint, Prettier)
-  - Unit tests with coverage reporting
-  - Build verification
-- **Deployment**: 
-  - Builds React app and deploys to S3
-  - Invalidates CloudFront distribution
-  - **Live URL**: https://easygenerator.omarshabaan.tech
+- **CI**: Code quality checks, unit tests, build verification
+- **Deployment**: S3 + CloudFront (zero downtime)
+- **Live URL**: https://easygenerator.omarshabaan.tech
 
-#### **Backend Pipeline** (`.github/workflows/backend-ci.yaml` & `deploy-backend.yaml`)  
+#### **Backend Pipeline**  
 - **Triggers**: Pull requests and pushes to `main` branch (backend changes only)
-- **CI Steps**:
-  - Code quality checks (ESLint, Prettier)
-  - Unit and integration tests
-  - Docker image build and push to ECR
-- **Deployment**:
-  - Deploys to AWS ECS with rolling updates
-  - **API URL**: https://be.easygenerator.omarshabaan.tech
+- **CI**: Code quality checks, unit/integration tests, Docker build
+- **Deployment**: ECS rolling deployment (brief downtime for cost optimization)
+- **API URL**: https://be.easygenerator.omarshabaan.tech
 
 #### **Pipeline Features**
-- 🔒 **OIDC Authentication**: Secure AWS access without long-lived credentials
-- 📊 **Code Coverage**: Automated coverage reporting via CodeCov
-- 🏗️ **Path-based Triggers**: Only runs when relevant files change
-- 🔄 **Separate Environments**: Independent CI/CD for frontend and backend
-- ⚡ **Fast Builds**: Optimized Node.js caching and parallel jobs
+- 🔒 OIDC authentication for secure AWS access
+- 📊 Code coverage reporting via CodeCov
+- 🏗️ Path-based triggers (only runs when relevant files change)
+- ⚡ Optimized builds with Node.js caching
 
-#### **Deployment Strategy**
-- **Frontend**: Zero-downtime deployment (S3 + CloudFront invalidation)
-- **Backend**: Rolling deployment with brief downtime (~30-60 seconds for cost optimization)
+## 📖 Architecture Documentation
 
-#### **SSL/TLS Configuration**
-The backend API uses a cost-optimized SSL setup:
+For detailed technical decisions and implementation details, see our Architecture Decision Records (ADRs):
 
-- **SSL Termination**: Nginx reverse proxy on EC2 instance
-- **Certificate**: Let's Encrypt free SSL certificates with automatic renewal
-- **Architecture**: ECS on EC2 instances (not Fargate + ALB + ACM)
-  - **Cost Savings**: ~$16/month by avoiding Application Load Balancer
-  - **Trade-off**: Manual SSL management vs AWS Certificate Manager automation
-  - **Renewal**: Automated via certbot cron job on EC2 instance
-
-**Nginx Configuration**:
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name be.easygenerator.omarshabaan.tech;
-    
-    ssl_certificate /etc/letsencrypt/live/be.easygenerator.omarshabaan.tech/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/be.easygenerator.omarshabaan.tech/privkey.pem;
-    
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-#### **🔄 Future CI/CD Improvements (TODO)**
-- [ ] **Rollback Mechanism**: Automatic rollback on deployment failure or health check errors
-- [ ] **Blue-Green Deployment**: Zero-downtime backend deployments (currently simple rolling for cost)
-- [ ] **Fix Backend Linting Errors**: Resolve ESLint/Prettier issues in backend codebase
-- [ ] **End-to-End Testing**: Automated E2E tests in staging environment
-- [ ] **Performance Testing**: Load testing integration before production deployment
+- **[ADR-001: Frontend Authentication State Management](./docs/adr/001-frontend-authentication-state-management.md)** - Frontend authentication patterns and state management
+- **[ADR-002: Backend Authentication Architecture](./docs/adr/002-backend-authentication-architecture-decisions.md)** - Backend security implementation and JWT handling
+- **[ADR-003: SSL/TLS Configuration Strategy](./docs/adr/003-ssl-tls-configuration.md)** - SSL setup, cost optimization, and Nginx configuration
+- **[ADR-004: Deployment Strategy and CI/CD Pipeline](./docs/adr/004-deployment-strategy.md)** - Deployment patterns, CI/CD workflows, and future roadmap
 
 ## 🚀 Deployment
 
@@ -264,4 +222,9 @@ server {
 make prod-build
 make prod-up
 ```
+
+### AWS Infrastructure
+Infrastructure code and deployment scripts are located in the `infrastructure/` directory. See [ADR-004](./docs/adr/004-deployment-strategy.md) for detailed deployment strategy and [ADR-003](./docs/adr/003-ssl-tls-configuration.md) for SSL configuration details.
+
+
 
