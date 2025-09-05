@@ -1,0 +1,484 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: 'ECS backed by ec2 instance and DocumentDB instance'
+
+Parameters:
+  EcsClusterName:
+    Description: ecs cluster name
+    Type: String
+    Default: easygenerator-interview-ecs-cluster
+
+  TaskDefinitionFamily:
+    Description: task definition family
+    Type: String
+    Default: easygenerator-interview-backend
+
+  ContainerCloudWatchLogGroupName:
+    Description: task definition family
+    Type: String
+    Default: easygenerator-interview-backend-log-group
+  ContainerName:
+    Description: main container name
+    Type: String
+    Default: easygenerator-interview-backend-container
+  EcsServiceName:
+    Description: ecs service name
+    Type: String
+    Default: easygenerator-interview-ecs-service
+  GithubUserName:
+    Type: String
+    Default: Omar-p
+    Description: GitHub username for GitHub Actions OIDC trust
+
+  GithubRepo:
+    Type: String
+    Default: eg-auth-task
+    Description: GitHub repository name for GitHub Actions OIDC trust
+
+  KeyName:
+    Description: keypair name which will be used to connect to the ec2 instance
+    Type: String
+    Default: easygenerator-interview-key-pair
+
+  DockerImageName:
+    Description: image name for the backend
+    Type: String
+    Default: easygenerator-interview
+
+  Application:
+    Description: Application name for the backend
+    Type: String
+    Default: easygenerator-interview-task
+
+  VpcStackName:
+    Description: existing vpc stack name
+    Type: String
+    Default: easygenerator-interview-task-vpc
+
+  EcsEC2AMI:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id
+    Description: The Amazon Machine Image ID used for the cluster; latest Amazon ECS-optimized Amazon Linux 2 image ID
+
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    AllowedValues:
+      - t2.nano
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+      - t2.xlarge
+      - t2.2xlarge
+      - t3.nano
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - g3.8xlarge
+      - r5.large
+      - r5.xlarge
+      - r5.2xlarge
+      - r5.4xlarge
+      - i3.xlarge
+      - i3.2xlarge
+      - i3.4xlarge
+      - i3.8xlarge
+      - d2.xlarge
+      - d2.2xlarge
+      - d2.4xlarge
+      - d2.8xlarge
+    Default: t2.micro
+    ConstraintDescription: must be a valid EC2 instance type.
+
+  SSHLocation:
+    Description: The IP address range that can be used to SSH to the EC2 instances
+    Type: String
+    Default: 0.0.0.0/0
+    MinLength: 9
+    MaxLength: 18
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+
+
+Resources:
+
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Ref EcsClusterName
+
+
+  EcsService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref EcsCluster
+      DesiredCount: 1
+      DeploymentConfiguration:
+        MaximumPercent: 100
+        MinimumHealthyPercent: 0
+      LaunchType: EC2
+      ServiceName: !Ref EcsServiceName
+      TaskDefinition: !Ref TaskDefinition
+
+  EcsEC2KeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: !Ref KeyName
+
+  EcsEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref EcsEC2InstanceProfile
+      SubnetId:
+        Fn::ImportValue:
+          Fn::Sub: "${AWS::Region}-${VpcStackName}-PublicSubnet0"
+      SecurityGroupIds:
+        - !GetAtt EcsEC2InstanceSecurityGroup.GroupId
+      KeyName: !Ref EcsEC2KeyPair
+      ImageId: !Ref EcsEC2AMI
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          echo ECS_CLUSTER=${EcsCluster} >> /etc/ecs/ecs.config
+
+
+  EcsEC2InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH, HTTP, HTTPS
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: "${AWS::Region}-${VpcStackName}-VPC"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+
+
+  EcsEC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+
+  EcsEC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - Ref: EcsEC2Role
+
+  ElasticIP:
+    Type: AWS::EC2::EIP
+
+  EIPAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !GetAtt ElasticIP.AllocationId
+      InstanceId: !Ref EcsEC2Instance
+
+
+  BackendEcrRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref DockerImageName
+
+
+  ContainerCloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref ContainerCloudWatchLogGroupName
+      RetentionInDays: 14
+
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+
+        - PolicyName: BackendAmazonECSTaskExecutionRolePolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameters
+                Resource:
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/DataBaseCredentials/${Application}/*
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/JWT/${Application}/*
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ContainerName}-task-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ECS-Task-Policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Ref TaskDefinitionFamily
+      NetworkMode: bridge
+      RequiresCompatibilities:
+        - EC2
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      ContainerDefinitions:
+        - Name: !Ref ContainerName
+          Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${DockerImageName}:2
+          Cpu: 660
+          Memory: 720
+          Environment:
+            # MongoDB/DocumentDB Configuration
+            - Name: MONGODB_HOST
+              Value: !GetAtt AppDBCluster.Endpoint
+            - Name: MONGODB_DATABASE
+              Value: !Sub "{{resolve:ssm:/DataBaseCredentials/${Application}/dbname}}"
+            - Name: MONGODB_USERNAME
+              Value: !Sub "{{resolve:ssm:/DataBaseCredentials/${Application}/username}}"
+            - Name: MONGODB_PASSWORD
+              Value: !Sub "{{resolve:ssm:/DataBaseCredentials/${Application}/password}}"
+            - Name: MONGODB_PORT
+              Value: "27017"
+
+            # JWT Configuration
+            - Name: JWT_SECRET
+              Value: !Sub "{{resolve:ssm:/JWT/${Application}/JWT_SECRET}}"
+            - Name: JWT_ACCESS_TOKEN_TTL
+              Value: !Sub "{{resolve:ssm:/JWT/${Application}/JWT_ACCESS_TOKEN_TTL}}"
+            - Name: JWT_REFRESH_TOKEN_TTL
+              Value: !Sub "{{resolve:ssm:/JWT/${Application}/JWT_REFRESH_TOKEN_TTL}}"
+            - Name: JWT_TOKEN_ISSUER
+              Value: be.easygenerator.omarshabaan.tech
+            - Name: JWT_TOKEN_AUDIENCE
+              Value: easygenerator.omarshabaan.tech
+
+            # Application Configuration
+            - Name: NODE_ENV
+              Value: production
+            - Name: PORT
+              Value: "3000"
+            - Name: LOG_LEVEL
+              Value: info
+
+            # CORS Configuration
+            - Name: ALLOWED_ORIGINS
+              Value: 'https://easygenerator.omarshabaan.tech'
+
+            # Cookie Configuration (Production)
+            - Name: COOKIE_DOMAIN
+              Value: '.omarshabaan.tech'
+            - Name: COOKIE_SECURE
+              Value: 'true'
+            - Name: COOKIE_SAME_SITE
+              Value: 'lax'
+
+            # AWS Region
+            - Name: AWS_REGION
+              Value: !Ref AWS::Region
+
+          PortMappings:
+            - ContainerPort: 3000
+              Protocol: tcp
+              HostPort: 3000
+
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - "curl -f http://localhost:3000/health || exit 1"
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ContainerCloudWatchLogGroup
+              awslogs-region: !Ref AWS::Region
+          Essential: true
+
+  AppDBSubnetGroup:
+    Type: AWS::DocDB::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnets available for the DocumentDB Cluster
+      SubnetIds:
+        - Fn::ImportValue:
+            Fn::Sub: "${AWS::Region}-${VpcStackName}-PrivateSubnet0"
+        - Fn::ImportValue:
+            Fn::Sub: "${AWS::Region}-${VpcStackName}-PrivateSubnet1"
+      Tags:
+        - Key: Application
+          Value: !Ref Application
+
+  AppDBCluster:
+    Type: AWS::DocDB::DBCluster
+    Properties:
+      DBClusterIdentifier: !Sub "${Application}-docdb-cluster"
+      MasterUsername: !Sub "{{resolve:ssm:/DataBaseCredentials/${Application}/username}}"
+      MasterUserPassword: !Sub "{{resolve:ssm:/DataBaseCredentials/${Application}/password}}"
+      DBSubnetGroupName: !Ref AppDBSubnetGroup
+      VpcSecurityGroupIds:
+        - !Ref AppDBSecurityGroup
+      Port: 27017
+      BackupRetentionPeriod: 5
+      Tags:
+        - Key: Application
+          Value: !Ref Application
+
+  AppDBInstance:
+    Type: AWS::DocDB::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Sub "${Application}-docdb-instance"
+      DBClusterIdentifier: !Ref AppDBCluster
+      DBInstanceClass: db.t3.medium
+      Tags:
+        - Key: Application
+          Value: !Ref Application
+
+  AppDBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: "${AWS::Region}-${VpcStackName}-VPC"
+      GroupDescription: Security Group for DocumentDB
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref EcsEC2InstanceSecurityGroup
+          IpProtocol: tcp
+          FromPort: 27017
+          ToPort: 27017
+
+  GitHubActionsBackendRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "GitHubActions-${Application}-Backend-Role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub 'arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com'
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub 'repo:${GithubUserName}/${GithubRepo}:*'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+      Policies:
+        # ECS permissions for backend deployment
+        - PolicyName: ECSFullAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecs:*
+                  - iam:PassRole
+                Resource: "*"
+
+
+        # Logs access for debugging
+        - PolicyName: LogsReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                  - logs:GetLogEvents
+                Resource: "*"
+
+Outputs:
+  InstanceId:
+    Description: InstanceId of the newly created EC2 instance
+    Value: !Ref EcsEC2Instance
+
+  AZ:
+    Description: Availability Zone of the newly created EC2 instance
+    Value: !GetAtt EcsEC2Instance.AvailabilityZone
+
+  PublicDNS:
+    Description: Public DNSName of the newly created EC2 instance
+    Value: !GetAtt EcsEC2Instance.PublicDnsName
+
+  PublicIP:
+    Description: Public IP address of the newly created EC2 instance
+    Value: !GetAtt EcsEC2Instance.PublicIp
+
+  GitHubActionsBackendRoleArn:
+    Description: ARN of the GitHub Actions role for backend deployment
+    Value: !GetAtt GitHubActionsBackendRole.Arn
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-GitHubActionsBackendRoleArn"
