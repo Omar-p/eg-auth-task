@@ -359,4 +359,4 @@ export const queryClient = new QueryClient({
 2025-01-09
 
 ## Authors
-- Claude Code Assistant
+- omarshabaan.dev@gmail.com + Claude Code Assistant

@@ -1,0 +1,33 @@
+# Development overrides - automatically loaded by docker-compose
+services:
+  backend:
+    volumes:
+      # Enable hot reload in development
+      - ./backend:/app:delegated
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true  # For file watching in Docker
+    command: ["npm", "run", "start:dev"]
+
+  frontend:
+    volumes:
+      # Enable hot reload in development
+      - ./frontend:/app:delegated
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true  # For file watching in Docker
+      - FAST_REFRESH=true
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+
+  mongodb:
+    # Add port mapping for direct database access in development
+    ports:
+      - "27017:27017"
+    # Persist data in development
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongodb/init:/docker-entrypoint-initdb.d
+
+volumes:
+  mongodb_data:

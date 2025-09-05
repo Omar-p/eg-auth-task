@@ -1,0 +1,82 @@
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:8.0.13
+    container_name: eg_auth_mongodb_backend
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME?Please set MONGODB_USERNAME in your environment}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD?Please set MONGODB_PASSWORD in your environment}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE?Please set MONGODB_DATABASE in your environment}
+    ports:
+      - "${MONGODB_PORT:-27017}:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ../mongodb/init:/docker-entrypoint-initdb.d
+    networks:
+      - eg_auth_backend_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Backend Service (for backend-only development)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ${NODE_ENV:-development}
+    container_name: eg_auth_backend_only
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=${BACKEND_PORT:-3000}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+
+      # MongoDB Configuration
+      - MONGODB_HOST=mongodb
+      - MONGODB_PORT=${MONGODB_PORT:-27017}
+      - MONGODB_DATABASE=${MONGODB_DATABASE?Please set MONGODB_DATABASE in your environment}
+      - MONGODB_USERNAME=${MONGODB_USERNAME?Please set MONGODB_USERNAME in your environment}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD?Please set MONGODB_PASSWORD in your environment}
+
+      # JWT Configuration
+      - JWT_SECRET=${JWT_SECRET?Please set JWT_SECRET in your environment}
+      - JWT_ACCESS_TOKEN_TTL=${JWT_ACCESS_TOKEN_TTL:-3600}
+      - JWT_REFRESH_TOKEN_TTL=${JWT_REFRESH_TOKEN_TTL:-604800}
+      - JWT_TOKEN_ISSUER=${JWT_TOKEN_ISSUER:-auth-api}
+      - JWT_TOKEN_AUDIENCE=${JWT_TOKEN_AUDIENCE:-localhost:3000}
+
+      # Cookie Configuration
+      - COOKIE_DOMAIN=${COOKIE_DOMAIN:-}
+      - COOKIE_SECURE=${COOKIE_SECURE:-false}
+      - COOKIE_SAME_SITE=${COOKIE_SAME_SITE:-lax}
+
+      # CORS Configuration
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3001,http://localhost:5173,http://localhost:5174}
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - eg_auth_backend_network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    command: ["npm", "run", "start:dev"]
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  eg_auth_backend_network:
+    driver: bridge

@@ -48,7 +48,7 @@ describe('Authentication Integration Tests', () => {
 
       // Start MongoDB testcontainer with random port
       console.log('🐳 Starting MongoDB testcontainer...');
-      mongoContainer = new MongoDBContainer('mongo:8.0.14-rc0-noble')
+      mongoContainer = new MongoDBContainer('mongo:8.0.13')
         .withExposedPorts(27017)
         .withStartupTimeout(120000);
 
