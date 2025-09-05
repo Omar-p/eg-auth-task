@@ -10,6 +10,6 @@
   "setupFilesAfterEnv": ["<rootDir>/jest.setup.ts"],
   "testTimeout": 180000,
   "maxWorkers": 1,
-  "forceExit": false,
+  "forceExit": true,
   "detectOpenHandles": true
 }

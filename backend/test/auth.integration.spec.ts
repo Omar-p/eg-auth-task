@@ -38,6 +38,31 @@ describe('Authentication Integration Tests', () => {
     return cookies.find((cookie) => cookie?.startsWith('refresh_token=')) || '';
   };
 
+  // Helper function to create a user
+  const createTestUser = async (email = 'test@example.com', password = 'Password123!'): Promise<void> => {
+    await request(app.getHttpServer()).post('/api/auth/sign-up').send({
+      email,
+      name: 'Test User',
+      password,
+    });
+  };
+
+  // Helper function to create user and sign in
+  const createUserAndSignIn = async (email = 'test@example.com', password = 'Password123!'): Promise<{ accessToken: string; refreshTokenCookie: string }> => {
+    // Create user first
+    await createTestUser(email, password);
+
+    // Sign in to get tokens
+    const signInResponse = await request(app.getHttpServer())
+      .post('/api/auth/sign-in')
+      .send({ email, password });
+
+    return {
+      accessToken: signInResponse.body.accessToken,
+      refreshTokenCookie: extractRefreshTokenCookie(signInResponse),
+    };
+  };
+
   beforeAll(async () => {
     console.log('🚀 Starting integration test setup...');
 
@@ -85,6 +110,7 @@ describe('Authentication Integration Tests', () => {
     process.env.COOKIE_DOMAIN = '';
     process.env.COOKIE_SECURE = 'false';
     process.env.COOKIE_SAME_SITE = 'lax';
+    process.env.AWS_REGION = 'eu-central-1';
 
     try {
       console.log('🏗️ Creating NestJS test module...');
@@ -112,6 +138,8 @@ describe('Authentication Integration Tests', () => {
               COOKIE_DOMAIN: '',
               COOKIE_SECURE: 'false',
               COOKIE_SAME_SITE: 'lax',
+              AWS_REGION: 'eu-central-1',
+              AWS_BEDROCK_MODEL_ID: 'amazon.titan-text-lite-v1',
             };
             return config[key] || defaultValue;
           },
@@ -152,12 +180,31 @@ describe('Authentication Integration Tests', () => {
 
     try {
       if (app) {
+        // Close all Mongoose connections before closing the app
+        const mongoose = require('mongoose');
+
+        // Get all connections and close them
+        const connections = mongoose.connections || [];
+        for (const connection of connections) {
+          if (connection.readyState !== 0) {
+            console.log(`🔌 Closing mongoose connection: ${connection.name || 'default'}`);
+            await connection.close();
+          }
+        }
+
+        // Close the NestJS app
         await app.close();
         console.log('✅ NestJS app closed');
+
+        // Force disconnect any remaining connections
+        await mongoose.disconnect();
+        console.log('✅ Mongoose disconnected');
       }
 
-      // Container cleanup is handled automatically by testcontainers v11+
-      console.log('✅ MongoDB container cleanup handled automatically');
+      // Container cleanup is handled automatically by testcontainers
+      if (mongoContainer) {
+        console.log('✅ MongoDB container cleanup handled automatically');
+      }
     } catch (error) {
       console.warn('⚠️ Cleanup warning:', error.message);
     }
@@ -243,12 +290,7 @@ describe('Authentication Integration Tests', () => {
 
   describe('POST /api/auth/sign-in', () => {
     beforeEach(async () => {
-      // Create a test user first
-      await request(app.getHttpServer()).post('/api/auth/sign-up').send({
-        email: 'test@example.com',
-        name: 'Test User',
-        password: 'Password123!',
-      });
+      await createTestUser();
     });
 
     it('should authenticate user with valid credentials', async () => {
@@ -288,23 +330,8 @@ describe('Authentication Integration Tests', () => {
     let refreshTokenCookie: string;
 
     beforeEach(async () => {
-      // Create user first
-      await request(app.getHttpServer()).post('/api/auth/sign-up').send({
-        email: 'test@example.com',
-        name: 'Test User',
-        password: 'Password123!',
-      });
-
-      // Sign in to get refresh token
-      const signInResponse = await request(app.getHttpServer())
-        .post('/api/auth/sign-in')
-        .send({
-          email: 'test@example.com',
-          password: 'Password123!',
-        });
-
-      // Extract refresh token cookie
-      refreshTokenCookie = extractRefreshTokenCookie(signInResponse);
+      const { refreshTokenCookie: cookie } = await createUserAndSignIn();
+      refreshTokenCookie = cookie;
     });
 
     it('should refresh access token with valid refresh token', async () => {
@@ -394,22 +421,8 @@ describe('Authentication Integration Tests', () => {
     let refreshTokenCookie: string;
 
     beforeEach(async () => {
-      // Create user first
-      await request(app.getHttpServer()).post('/api/auth/sign-up').send({
-        email: 'test@example.com',
-        name: 'Test User',
-        password: 'Password123!',
-      });
-
-      // Sign in to get refresh token
-      const signInResponse = await request(app.getHttpServer())
-        .post('/api/auth/sign-in')
-        .send({
-          email: 'test@example.com',
-          password: 'Password123!',
-        });
-
-      refreshTokenCookie = extractRefreshTokenCookie(signInResponse);
+      const { refreshTokenCookie: cookie } = await createUserAndSignIn();
+      refreshTokenCookie = cookie;
     });
 
     it('should logout user and clear refresh token', async () => {
