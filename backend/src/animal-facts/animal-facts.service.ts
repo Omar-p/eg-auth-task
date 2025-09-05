@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 import { AnimalFact, DailyAnimalCache } from './interfaces/animal-fact.interface';
 
@@ -13,8 +14,12 @@ export class AnimalFactsService {
     'Octopus', 'Dolphin', 'Eagle', 'Kangaroo', 'Panda'
   ];
 
-  constructor() {
-    const awsRegion = process.env.AWS_REGION;
+  constructor(private readonly configService: ConfigService) {
+    const awsRegion = this.configService.get<string>('AWS_REGION');
+    
+    if (!awsRegion) {
+      throw new Error('AWS_REGION is not configured');
+    }
 
     const clientConfig = {
       region: awsRegion,
@@ -30,15 +35,17 @@ export class AnimalFactsService {
   }
 
   private getRandomAnimal(): string {
-    const today = new Date();
-    const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+    const now = new Date();
+    const startOfYear = Date.UTC(now.getUTCFullYear(), 0, 1);
+    const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    const dayOfYear = Math.floor((today - startOfYear) / (1000 * 60 * 60 * 24));
     return this.animals[dayOfYear % this.animals.length];
   }
 
   private createExpiryDate(): Date {
     const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    tomorrow.setUTCHours(0, 0, 0, 0);
     return tomorrow;
   }
 
@@ -54,7 +61,7 @@ export class AnimalFactsService {
       },
     };
 
-    const modelId = process.env.AWS_BEDROCK_MODEL_ID;
+    const modelId = this.configService.get<string>('AWS_BEDROCK_MODEL_ID') || 'amazon.titan-text-lite-v1';
     const command = new InvokeModelCommand({
       modelId,
       contentType: 'application/json',
@@ -79,9 +86,7 @@ export class AnimalFactsService {
         throw new Error(`Unexpected response structure: ${JSON.stringify(responseBody)}`);
       }
 
-      let fact = responseBody.results[0].outputText.trim();
-
-
+      const fact = responseBody.results[0].outputText.trim();
       this.logger.log(`Successfully generated fact for ${animal}`);
 
       return fact;
