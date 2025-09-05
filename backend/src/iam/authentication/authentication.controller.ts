@@ -13,6 +13,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiHeader,
 } from '@nestjs/swagger';
 import { AuthenticationService } from './authentication.service';
 import { SignUpDto } from './dto/sign-up.dto/sign-up.dto';
@@ -129,6 +130,12 @@ export class AuthenticationController {
 
   @Delete('/logout-all')
   @ApiBearerAuth('JWT-auth')
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer token for authentication',
+    required: true,
+    example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  })
   @ApiOperation({ summary: 'Logout from all devices' })
   @ApiResponse({
     status: 200,
