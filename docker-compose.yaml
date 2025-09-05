@@ -54,6 +54,13 @@ services:
 
       # CORS Configuration
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3001,http://localhost:5173,http://localhost:5174}
+
+      # AWS Configuration
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID?Please set AWS_ACCESS_KEY_ID in your environment}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY?Please set AWS_SECRET_ACCESS_KEY in your environment}
+      - AWS_BEDROCK_MODEL_ID=${AWS_BEDROCK_MODEL_ID:-amazon.titan-text-lite-v1}
+
     ports:
       - "${BACKEND_PORT:-3000}:3000"
     volumes:
