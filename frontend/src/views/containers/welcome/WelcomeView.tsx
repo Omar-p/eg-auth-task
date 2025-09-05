@@ -1,7 +1,10 @@
 import { useAuth } from "@/contexts/auth.types";
+import { useAnimalFacts } from "@/hooks/useAnimalFacts";
+import { AnimalFactCard } from "@molecules";
 
 export const WelcomeView = () => {
   const { user } = useAuth();
+  const { animalFact, isLoading, timeLeft, refetch } = useAnimalFacts();
 
   return (
     <div className="flex items-center justify-center min-h-screen px-4 py-8">
@@ -35,16 +38,14 @@ export const WelcomeView = () => {
               </span>
             </div>
 
-            {/* Additional Content */}
-            <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200/50">
-              <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                What's Next?
-              </h2>
-              <p className="text-gray-600 text-sm">
-                This is your dashboard area. Here you can access all the
-                features and functionality of our platform. Start exploring and
-                make the most of your experience!
-              </p>
+            {/* Daily Animal Fact */}
+            <div className="mt-8">
+              <AnimalFactCard
+                animalFact={animalFact}
+                timeLeft={timeLeft}
+                isLoading={isLoading}
+                onRefresh={refetch}
+              />
             </div>
           </div>
         </div>

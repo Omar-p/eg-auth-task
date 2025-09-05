@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { IamModule } from './iam/iam.module';
 import { CommonModule } from './common/common.module';
+import { AnimalFactsModule } from './animal-facts/animal-facts.module';
 import { RequestCorrelationMiddleware } from './common/middleware/request-correlation.middleware';
 import { UserContextMiddleware } from './common/middleware/user-context.middleware';
 import databaseConfig from './config/database.config';
@@ -25,6 +26,7 @@ import databaseConfig from './config/database.config';
     }),
     CommonModule,
     IamModule,
+    AnimalFactsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

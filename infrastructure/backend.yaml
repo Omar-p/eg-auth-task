@@ -280,6 +280,11 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: "*"
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                Resource: 
+                  - !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.titan-text-lite-v1"
 
 
   TaskDefinition:
@@ -341,9 +346,11 @@ Resources:
             - Name: COOKIE_SAME_SITE
               Value: 'lax'
 
-            # AWS Region
+            # AWS Configuration
             - Name: AWS_REGION
               Value: !Ref AWS::Region
+            - Name: AWS_BEDROCK_MODEL_ID
+              Value: amazon.titan-text-lite-v1
 
           PortMappings:
             - ContainerPort: 3000

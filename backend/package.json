@@ -21,6 +21,7 @@
     "test:integration": "jest --config ./test/jest-integration.json"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.882.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",

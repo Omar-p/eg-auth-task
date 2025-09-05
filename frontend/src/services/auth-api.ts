@@ -103,7 +103,12 @@ class AuthAPI {
     } catch (error) {
       console.error("Token refresh attempt failed:", error);
       this.setAccessToken(null);
-      this.onLogout();
+
+      // Only logout (clear user data) on 401 errors
+      if (error instanceof HttpError && error.status === 401) {
+        this.onLogout();
+      }
+
       return null;
     }
   }
