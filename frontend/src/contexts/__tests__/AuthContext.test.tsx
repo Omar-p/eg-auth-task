@@ -12,6 +12,7 @@ vi.mock("@/services/auth-api", () => ({
     refreshToken: vi.fn(),
     setTokenGetter: vi.fn(),
     setTokenSetter: vi.fn(),
+    setLogoutHandler: vi.fn(),
   },
   HttpError: class extends Error {
     status: number;
@@ -134,11 +135,13 @@ describe("AuthContext", () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    expect(result.current.user).toEqual(mockUser);
-    expect(result.current.isAuthenticated).toBe(true);
+    // When refresh fails, user should be logged out completely
+    expect(result.current.user).toBe(null);
+    expect(result.current.isAuthenticated).toBe(false);
     expect(mockAuthAPI.refreshToken).toHaveBeenCalled();
-    // Access token should be null if refresh failed
     expect(result.current.getAccessToken()).toBe(null);
+    // localStorage should be cleared
+    expect(mockLocalStorage.getItem("user_data")).toBe(null);
   });
 
   it("should clear invalid data from localStorage on initialization", async () => {
@@ -164,8 +167,10 @@ describe("AuthContext", () => {
     };
 
     mockAuthAPI.logout.mockResolvedValue(undefined);
-    // Mock refresh to fail during initialization so it doesn't interfere
-    mockAuthAPI.refreshToken.mockRejectedValue(new Error("No refresh token"));
+    // Mock refresh to succeed during initialization
+    mockAuthAPI.refreshToken.mockResolvedValue({
+      accessToken: "refreshed_token_123",
+    });
 
     // Set up authenticated state
     const mockUser = {
@@ -188,13 +193,8 @@ describe("AuthContext", () => {
     expect(result.current.user).toEqual(mockUser);
     expect(result.current.isAuthenticated).toBe(true);
 
-    // Simulate having an access token in memory (after initialization)
-    act(() => {
-      result.current.setTokens({ access_token: "mock_token" });
-    });
-
-    // Verify token is set in memory
-    expect(result.current.getAccessToken()).toBe("mock_token");
+    // Verify token is set from refresh
+    expect(result.current.getAccessToken()).toBe("refreshed_token_123");
 
     // Clear the refresh token mock call count from initialization
     mockAuthAPI.refreshToken.mockClear();
