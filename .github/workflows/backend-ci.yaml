@@ -50,8 +50,8 @@ jobs:
         run: npm run test -- --coverage --watchAll=false --passWithNoTests
         continue-on-error: true
 
-      - name: Run e2e tests
-        run: npm run test:e2e -- --watchAll=false --passWithNoTests
+      - name: Run integration tests
+        run: npm run test:integration
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v3
