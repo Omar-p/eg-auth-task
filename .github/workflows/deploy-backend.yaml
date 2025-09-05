@@ -95,8 +95,10 @@ jobs:
       - name: Build and push Docker image
         id: build
         run: |
-          IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/${{ secrets.BACKEND_ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}"
+          IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/${{ secrets.BACKEND_ECR_REPOSITORY }}:${{ steps.image-tag.outputs.tag }}"
           LATEST_URI="${{ steps.login-ecr.outputs.registry }}/${{ secrets.BACKEND_ECR_REPOSITORY }}:latest"
+          
+          echo "Building image with URI: $IMAGE_URI"
           
           docker build \
             --target production \
@@ -151,6 +153,13 @@ jobs:
 
       - name: Deploy to ECS
         run: |
+          echo "Image URI from build job: ${{ needs.build-and-push.outputs.image-uri }}"
+          
+          if [ -z "${{ needs.build-and-push.outputs.image-uri }}" ]; then
+            echo "Error: Image URI is empty"
+            exit 1
+          fi
+
           TASK_DEFINITION=$(aws ecs describe-services \
             --cluster ${{ secrets.ECS_CLUSTER }} \
             --services ${{ secrets.ECS_SERVICE }} \

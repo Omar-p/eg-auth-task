@@ -1,4 +1,4 @@
-name: Deploy NestJS Backend to AWS ECS
+name: Backend CI
 
 on:
   pull_request:
