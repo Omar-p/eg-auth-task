@@ -50,7 +50,7 @@ describe('Authentication Integration Tests', () => {
       console.log('🐳 Starting MongoDB testcontainer...');
       mongoContainer = new MongoDBContainer('mongo:8.0.14-rc0-noble')
         .withExposedPorts(27017)
-        .withStartupTimeout(3000); // 2 minute timeout, no replica set
+        .withStartupTimeout(120000);
 
       const startedContainer = await mongoContainer.start();
       mongoUri = startedContainer.getConnectionString();

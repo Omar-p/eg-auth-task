@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import { Logger } from 'nestjs-pino';
+import * as yaml from 'js-yaml';
 import { AppModule } from './app.module';
 import { AppLoggerService } from './common/services/app-logger.service';
 
@@ -66,7 +67,6 @@ async function bootstrap() {
   });
 
   app.getHttpAdapter().get('/api/docs-yaml', (req: any, res: any) => {
-    const yaml = require('js-yaml');
     res.type('text/yaml');
     res.send(yaml.dump(document));
   });

@@ -4,7 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { IamModule } from './iam/iam.module';
-import { CommonModule } from './common/comon.module';
+import { CommonModule } from './common/common.module';
 import { RequestCorrelationMiddleware } from './common/middleware/request-correlation.middleware';
 import { UserContextMiddleware } from './common/middleware/user-context.middleware';
 import databaseConfig from './config/database.config';
@@ -31,11 +31,7 @@ import databaseConfig from './config/database.config';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // Apply correlation middleware first (to all routes)
     consumer.apply(RequestCorrelationMiddleware).forRoutes('*');
-
-    // Apply user context middleware after authentication (to all routes)
-    // This will run after passport authentication middleware
     consumer.apply(UserContextMiddleware).forRoutes('*');
   }
 }

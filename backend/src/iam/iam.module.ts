@@ -14,11 +14,10 @@ import {
   RefreshToken,
   RefreshTokenSchema,
 } from './entities/refresh-token.entity';
-import { CommonModule } from '../common/comon.module';
+import { CommonModule } from '../common/common.module';
 
 import { JwtStrategy } from './authentication/strategies/jwt.strategy';
 import { JwtAuthGuard } from './authentication/guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from './authentication/guards/optional-jwt-auth.guard';
 
 @Module({
   imports: [
@@ -37,10 +36,8 @@ import { OptionalJwtAuthGuard } from './authentication/guards/optional-jwt-auth.
       useClass: BcryptService,
     },
     AuthenticationService,
-    // JWT authentication providers
     JwtStrategy,
     JwtAuthGuard,
-    OptionalJwtAuthGuard,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
@@ -49,7 +46,6 @@ import { OptionalJwtAuthGuard } from './authentication/guards/optional-jwt-auth.
   controllers: [AuthenticationController],
   exports: [
     JwtAuthGuard,
-    OptionalJwtAuthGuard,
     AuthenticationService,
     JwtModule,
   ],

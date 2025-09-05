@@ -183,7 +183,7 @@ export class AuthenticationService {
         { isRevoked: true, revokedAt: new Date() },
       );
 
-      const user = await this.userModel.findById(storedToken.userId);
+      const user = storedToken.userId as unknown as IUser;
       if (!user || !user.isActive) {
         throw new UnauthorizedException('User account is not active');
       }

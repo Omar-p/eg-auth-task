@@ -26,11 +26,11 @@ import { AuthUser } from './interfaces/auth-user.interface';
 
 @ApiTags('Authentication')
 @Controller('/api/auth')
-@Public() // Mark entire authentication controller as public
 export class AuthenticationController {
   constructor(private readonly authenticationService: AuthenticationService) {}
 
   @Post('/sign-up')
+  @Public()
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({
     status: 201,
@@ -50,6 +50,7 @@ export class AuthenticationController {
 
   @HttpCode(HttpStatus.OK)
   @Post('/sign-in')
+  @Public()
   @UseInterceptors(AuthResponseInterceptor)
   @ApiOperation({ summary: 'Sign in user' })
   @ApiResponse({

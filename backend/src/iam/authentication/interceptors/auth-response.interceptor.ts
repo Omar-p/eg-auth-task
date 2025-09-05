@@ -84,10 +84,6 @@ export class AuthResponseInterceptor implements NestInterceptor {
     let sameSite: 'strict' | 'lax' | 'none';
 
     if (isProduction) {
-      domain = cookieDomain || '.omarshabaan.tech';
-      secure = cookieSecure;
-      sameSite = cookieSameSite || 'lax';
-    } else if (isDocker) {
       domain = cookieDomain;
       secure = cookieSecure;
       sameSite = cookieSameSite || 'lax';
