@@ -7,12 +7,6 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/backend-ci.yaml'
-  push:
-    branches-ignore:
-      - main
-    paths:
-      - 'backend/**'
-      - '.github/workflows/backend-ci.yaml'
 
 permissions:
   id-token: write
