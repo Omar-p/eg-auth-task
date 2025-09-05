@@ -1,12 +1,12 @@
 services:
   # MongoDB Database
   mongodb:
-    image: mongo:8.0.14-rc0-noble
+    image: mongo:8.0.13
     container_name: eg_auth_mongodb_backend
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-admin_password_secure_123}
-      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-auth_db}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME?Please set MONGODB_USERNAME in your environment}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD?Please set MONGODB_PASSWORD in your environment}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE?Please set MONGODB_DATABASE in your environment}
     ports:
       - "${MONGODB_PORT:-27017}:27017"
     volumes:
@@ -36,12 +36,12 @@ services:
       # MongoDB Configuration
       - MONGODB_HOST=mongodb
       - MONGODB_PORT=${MONGODB_PORT:-27017}
-      - MONGODB_DATABASE=${MONGODB_DATABASE:-auth_db}
-      - MONGODB_USERNAME=${MONGODB_USERNAME:-admin}
-      - MONGODB_PASSWORD=${MONGODB_PASSWORD:-admin_password_secure_123}
+      - MONGODB_DATABASE=${MONGODB_DATABASE?Please set MONGODB_DATABASE in your environment}
+      - MONGODB_USERNAME=${MONGODB_USERNAME?Please set MONGODB_USERNAME in your environment}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD?Please set MONGODB_PASSWORD in your environment}
 
       # JWT Configuration
-      - JWT_SECRET=${JWT_SECRET:-your_super_secret_jwt_key_here_minimum_32_characters_long_for_security}
+      - JWT_SECRET=${JWT_SECRET?Please set JWT_SECRET in your environment}
       - JWT_ACCESS_TOKEN_TTL=${JWT_ACCESS_TOKEN_TTL:-3600}
       - JWT_REFRESH_TOKEN_TTL=${JWT_REFRESH_TOKEN_TTL:-604800}
       - JWT_TOKEN_ISSUER=${JWT_TOKEN_ISSUER:-auth-api}
