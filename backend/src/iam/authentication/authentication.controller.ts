@@ -136,7 +136,9 @@ export class AuthenticationController {
     required: true,
     example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
-  @ApiOperation({ summary: 'Delete all user sessions (logout from all devices)' })
+  @ApiOperation({
+    summary: 'Delete all user sessions (logout from all devices)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Successfully deleted all user sessions',

@@ -467,7 +467,9 @@ describe('Authentication Integration Tests', () => {
 
     it('should delete all user sessions and revoke all refresh tokens', async () => {
       // Verify we have 3 active refresh tokens before logout-all
-      const activeTokensBefore = await refreshTokenModel.find({ isRevoked: false });
+      const activeTokensBefore = await refreshTokenModel.find({
+        isRevoked: false,
+      });
       expect(activeTokensBefore).toHaveLength(3);
 
       // Call sessions delete endpoint
@@ -481,14 +483,18 @@ describe('Authentication Integration Tests', () => {
       expect(response.body.message).toMatch(/deleted \d+ session/i);
 
       // Verify all refresh tokens are now revoked
-      const activeTokensAfter = await refreshTokenModel.find({ isRevoked: false });
+      const activeTokensAfter = await refreshTokenModel.find({
+        isRevoked: false,
+      });
       expect(activeTokensAfter).toHaveLength(0);
 
-      const revokedTokensAfter = await refreshTokenModel.find({ isRevoked: true });
+      const revokedTokensAfter = await refreshTokenModel.find({
+        isRevoked: true,
+      });
       expect(revokedTokensAfter).toHaveLength(3);
 
       // All revoked tokens should have revokedAt timestamp
-      revokedTokensAfter.forEach(token => {
+      revokedTokensAfter.forEach((token) => {
         expect(token.revokedAt).toBeTruthy();
         expect(token.revokedAt).toBeInstanceOf(Date);
       });
@@ -568,7 +574,9 @@ describe('Authentication Integration Tests', () => {
       const user2AccessToken = user2SignInResponse.body.accessToken;
 
       // Verify we have tokens for both users
-      const allTokensBefore = await refreshTokenModel.find({ isRevoked: false });
+      const allTokensBefore = await refreshTokenModel.find({
+        isRevoked: false,
+      });
       expect(allTokensBefore.length).toBeGreaterThan(1); // At least 1 for each user
 
       // User 1 calls sessions delete
