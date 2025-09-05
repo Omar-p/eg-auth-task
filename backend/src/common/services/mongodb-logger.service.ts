@@ -34,7 +34,7 @@ export class MongoDBLoggerService {
 
       end: (result?: T, documentsAffected?: number) => {
         const executionTimeMs = Date.now() - startTime;
-        
+
         LoggingService.setContext({
           mongodb: {
             collection,
@@ -60,7 +60,7 @@ export class MongoDBLoggerService {
 
       error: (error: Error) => {
         const executionTimeMs = Date.now() - startTime;
-        
+
         this.logger.error(
           JSON.stringify({
             collection,
@@ -83,16 +83,16 @@ export class MongoDBLoggerService {
 
   private sanitizeFilter(filter?: Record<string, any>): Record<string, any> {
     if (!filter) return {};
-    
+
     const sanitized = { ...filter };
     const sensitiveFields = ['password', 'token', 'secret', 'key'];
-    
+
     for (const field of sensitiveFields) {
       if (field in sanitized) {
         sanitized[field] = '***';
       }
     }
-    
+
     return sanitized;
   }
 }
