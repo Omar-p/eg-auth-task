@@ -68,6 +68,8 @@ jobs:
     outputs:
       image-uri: ${{ steps.build.outputs.image-uri }}
       image-tag: ${{ steps.build.outputs.image-tag }}
+      registry: ${{ steps.build.outputs.registry }}
+      repository: ${{ steps.build.outputs.repository }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -95,10 +97,18 @@ jobs:
       - name: Build and push Docker image
         id: build
         run: |
-          IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/${{ secrets.BACKEND_ECR_REPOSITORY }}:${{ steps.image-tag.outputs.tag }}"
-          LATEST_URI="${{ steps.login-ecr.outputs.registry }}/${{ secrets.BACKEND_ECR_REPOSITORY }}:latest"
+          REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+          REPOSITORY="${{ secrets.BACKEND_ECR_REPOSITORY }}"
+          TAG="${{ steps.image-tag.outputs.tag }}"
           
-          echo "Building image with URI: $IMAGE_URI"
+          echo "Registry: ${REGISTRY}"
+          echo "Repository: ${REPOSITORY}"
+          echo "Tag: ${TAG}"
+          
+          IMAGE_URI="${REGISTRY}/${REPOSITORY}:${TAG}"
+          LATEST_URI="${REGISTRY}/${REPOSITORY}:latest"
+          
+          echo "Building image with URI: ${IMAGE_URI}"
           
           docker build \
             --target production \
@@ -109,8 +119,11 @@ jobs:
           docker push $IMAGE_URI
           docker push $LATEST_URI
           
-          echo "image-uri=$IMAGE_URI" >> $GITHUB_OUTPUT
-          echo "image-tag=${{ steps.image-tag.outputs.tag }}" >> $GITHUB_OUTPUT
+          # Set outputs using environment variables to avoid secret detection
+          echo "image-uri=${IMAGE_URI}" >> $GITHUB_OUTPUT
+          echo "image-tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "registry=${REGISTRY}" >> $GITHUB_OUTPUT
+          echo "repository=${REPOSITORY}" >> $GITHUB_OUTPUT
 
       - name: Generate deployment artifacts
         run: |
@@ -153,12 +166,40 @@ jobs:
 
       - name: Deploy to ECS
         run: |
-          echo "Image URI from build job: ${{ needs.build-and-push.outputs.image-uri }}"
+          echo "=== DEBUG: All job outputs ==="
+          echo "build-and-push.result: ${{ needs.build-and-push.result }}"
+          echo "build-and-push.outputs.image-uri: ${{ needs.build-and-push.outputs.image-uri }}"
+          echo "build-and-push.outputs.image-tag: ${{ needs.build-and-push.outputs.image-tag }}"
+          echo "build-and-push.outputs.registry: ${{ needs.build-and-push.outputs.registry }}"
+          echo "build-and-push.outputs.repository: ${{ needs.build-and-push.outputs.repository }}"
+          echo "=========================="
           
-          if [ -z "${{ needs.build-and-push.outputs.image-uri }}" ]; then
-            echo "Error: Image URI is empty"
+          if [ "${{ needs.build-and-push.result }}" != "success" ]; then
+            echo "Error: build-and-push job did not succeed (result: ${{ needs.build-and-push.result }})"
             exit 1
           fi
+          
+          # Try to use direct image-uri output, fallback to reconstructing from components
+          IMAGE_URI="${{ needs.build-and-push.outputs.image-uri }}"
+          if [ -z "$IMAGE_URI" ]; then
+            echo "Image URI output is empty, reconstructing from components..."
+            REGISTRY="${{ needs.build-and-push.outputs.registry }}"
+            REPOSITORY="${{ needs.build-and-push.outputs.repository }}"
+            TAG="${{ needs.build-and-push.outputs.image-tag }}"
+            
+            if [ -n "$REGISTRY" ] && [ -n "$REPOSITORY" ] && [ -n "$TAG" ]; then
+              IMAGE_URI="${REGISTRY}/${REPOSITORY}:${TAG}"
+              echo "Reconstructed Image URI: $IMAGE_URI"
+            else
+              echo "Error: Cannot reconstruct image URI - missing components"
+              echo "Registry: $REGISTRY"
+              echo "Repository: $REPOSITORY" 
+              echo "Tag: $TAG"
+              exit 1
+            fi
+          fi
+          
+          echo "Using Image URI: $IMAGE_URI"
 
           TASK_DEFINITION=$(aws ecs describe-services \
             --cluster ${{ secrets.ECS_CLUSTER }} \
@@ -172,7 +213,7 @@ jobs:
 
           sudo apt-get update && sudo apt-get install -y jq
 
-          jq --arg IMAGE "${{ needs.build-and-push.outputs.image-uri }}" \
+          jq --arg IMAGE "$IMAGE_URI" \
              '.containerDefinitions[0].image = $IMAGE' \
              current-task-def.json > updated-task-def.json
 
