@@ -79,12 +79,12 @@ services:
       dockerfile: Dockerfile
       target: ${NODE_ENV:-development}
       args:
-        - VITE_API_URL=${VITE_API_URL:-http://localhost:3000}
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:3000/api}
         - VITE_APP_NAME=${VITE_APP_NAME:-EasyGenerator Auth}
     container_name: eg_auth_frontend
     environment:
       - NODE_ENV=${NODE_ENV:-development}
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:3000}
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:3000/api}
       - VITE_APP_NAME=${VITE_APP_NAME:-EasyGenerator Auth}
     ports:
       - "${FRONTEND_PORT:-5173}:5173"

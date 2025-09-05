@@ -105,8 +105,6 @@ make install
 # Start development environment
 make dev
 
-# Run tests
-make test
 ```
 
 ### Environment Variables
@@ -216,12 +214,6 @@ For detailed technical decisions and implementation details, see our Architectur
 - **[ADR-004: Deployment Strategy and CI/CD Pipeline](./docs/adr/004-deployment-strategy.md)** - Deployment patterns, CI/CD workflows, and future roadmap
 
 ## 🚀 Deployment
-
-### Production Build
-```bash
-make prod-build
-make prod-up
-```
 
 ### AWS Infrastructure
 Infrastructure code and deployment scripts are located in the `infrastructure/` directory. See [ADR-004](./docs/adr/004-deployment-strategy.md) for detailed deployment strategy and [ADR-003](./docs/adr/003-ssl-tls-configuration.md) for SSL configuration details.
