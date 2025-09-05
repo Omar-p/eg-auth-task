@@ -431,6 +431,167 @@ describe('Authentication Integration Tests', () => {
     });
   });
 
+  describe('DELETE /api/auth/logout-all', () => {
+    let accessToken: string;
+    let refreshTokenCookies: string[] = [];
+
+    beforeEach(async () => {
+      // Create user first
+      await request(app.getHttpServer()).post('/api/auth/sign-up').send({
+        email: 'test@example.com',
+        name: 'Test User',
+        password: 'Password123!',
+      });
+
+      // Create multiple sessions by signing in multiple times
+      const sessions: request.Response[] = [];
+      for (let i = 0; i < 3; i++) {
+        const signInResponse = await request(app.getHttpServer())
+          .post('/api/auth/sign-in')
+          .send({
+            email: 'test@example.com',
+            password: 'Password123!',
+          });
+
+        sessions.push(signInResponse);
+        refreshTokenCookies.push(extractRefreshTokenCookie(signInResponse));
+      }
+
+      // Use the access token from the last session
+      accessToken = sessions[sessions.length - 1].body.accessToken;
+    });
+
+    afterEach(async () => {
+      refreshTokenCookies = [];
+    });
+
+    it('should logout user from all devices and revoke all refresh tokens', async () => {
+      // Verify we have 3 active refresh tokens before logout-all
+      const activeTokensBefore = await refreshTokenModel.find({ isRevoked: false });
+      expect(activeTokensBefore).toHaveLength(3);
+
+      // Call logout-all endpoint
+      const response = await request(app.getHttpServer())
+        .delete('/api/auth/logout-all')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      // Check response format
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toMatch(/logged out from \d+ device/i);
+
+      // Verify all refresh tokens are now revoked
+      const activeTokensAfter = await refreshTokenModel.find({ isRevoked: false });
+      expect(activeTokensAfter).toHaveLength(0);
+
+      const revokedTokensAfter = await refreshTokenModel.find({ isRevoked: true });
+      expect(revokedTokensAfter).toHaveLength(3);
+
+      // All revoked tokens should have revokedAt timestamp
+      revokedTokensAfter.forEach(token => {
+        expect(token.revokedAt).toBeTruthy();
+        expect(token.revokedAt).toBeInstanceOf(Date);
+      });
+    });
+
+    it('should prevent refresh token usage after logout-all', async () => {
+      // Call logout-all
+      await request(app.getHttpServer())
+        .delete('/api/auth/logout-all')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      // Try to use any of the previous refresh tokens - all should fail
+      for (const refreshTokenCookie of refreshTokenCookies) {
+        await request(app.getHttpServer())
+          .post('/api/auth/refresh')
+          .set('Cookie', refreshTokenCookie)
+          .expect(401);
+      }
+    });
+
+    it('should reject logout-all without valid access token', async () => {
+      await request(app.getHttpServer())
+        .delete('/api/auth/logout-all')
+        .expect(401);
+    });
+
+    it('should reject logout-all with invalid access token', async () => {
+      await request(app.getHttpServer())
+        .delete('/api/auth/logout-all')
+        .set('Authorization', 'Bearer invalid_token_here')
+        .expect(401);
+    });
+
+    it('should work correctly even when user has no active sessions', async () => {
+      // First logout from all devices
+      await request(app.getHttpServer())
+        .delete('/api/auth/logout-all')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      // Create a new session to test logout-all on user with no existing sessions
+      const newSignInResponse = await request(app.getHttpServer())
+        .post('/api/auth/sign-in')
+        .send({
+          email: 'test@example.com',
+          password: 'Password123!',
+        });
+
+      const newAccessToken = newSignInResponse.body.accessToken;
+
+      // Call logout-all again - should work and report 1 device
+      const response = await request(app.getHttpServer())
+        .delete('/api/auth/logout-all')
+        .set('Authorization', `Bearer ${newAccessToken}`)
+        .expect(200);
+
+      expect(response.body.message).toMatch(/logged out from 1 device/i);
+    });
+
+    it('should only revoke tokens for the authenticated user, not other users', async () => {
+      // Create second user
+      await request(app.getHttpServer()).post('/api/auth/sign-up').send({
+        email: 'test2@example.com',
+        name: 'Test User 2',
+        password: 'Password123!',
+      });
+
+      // Sign in second user
+      const user2SignInResponse = await request(app.getHttpServer())
+        .post('/api/auth/sign-in')
+        .send({
+          email: 'test2@example.com',
+          password: 'Password123!',
+        });
+
+      const user2AccessToken = user2SignInResponse.body.accessToken;
+
+      // Verify we have tokens for both users
+      const allTokensBefore = await refreshTokenModel.find({ isRevoked: false });
+      expect(allTokensBefore.length).toBeGreaterThan(1); // At least 1 for each user
+
+      // User 1 calls logout-all
+      await request(app.getHttpServer())
+        .delete('/api/auth/logout-all')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      // User 2 should still be able to use their refresh token
+      const user2RefreshCookie = extractRefreshTokenCookie(user2SignInResponse);
+      await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .set('Cookie', user2RefreshCookie)
+        .expect(200);
+
+      // User 2 should still be able to call logout-all
+      await request(app.getHttpServer())
+        .delete('/api/auth/logout-all')
+        .set('Authorization', `Bearer ${user2AccessToken}`)
+        .expect(200);
+    });
+  });
+
   describe('Exception Handling', () => {
     it('should return 400 for validation errors with proper error format', async () => {
       const response = await request(app.getHttpServer())
