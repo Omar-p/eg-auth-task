@@ -125,6 +125,7 @@ Key environment variables (see `.env.example` for full list):
 .
 ├── backend/           # NestJS backend application
 ├── frontend/          # React frontend application
+├── docs/              # Project documentation and ADRs
 ├── mongodb/           # MongoDB initialization scripts
 ├── infrastructure/    # AWS/deployment configurations
 ├── docker-compose.yaml          # Main compose file
@@ -149,9 +150,112 @@ Key environment variables (see `.env.example` for full list):
 - Password hashing with bcrypt
 - Security headers middleware
 
+### Logging & Monitoring
+- **Structured JSON Logging**: Uses Pino for structured JSON logs in production
+- **CloudWatch Integration**: Logs are optimized for AWS CloudWatch Logs Insights
+- **Request Correlation**: Each request has a unique `traceId` for tracking across services
+- **Contextual Logging**: Logs include user context, service metadata, and request information
+
+Example log structure:
+```json
+{
+  "level": 30,
+  "time": 1757050044112,
+  "pid": 1,
+  "service": "easygenerator-auth-backend",
+  "environment": "production",
+  "req": {
+    "method": "POST",
+    "url": "/api/auth/sign-in"
+  },
+  "traceId": "ecbed0dc-a1d4-460c-8109-6460c367e463",
+  "msg": "User signed in successfully: userId=68ba71036a95c7afb5aa60b1, email=user@example.com"
+}
+```
+
+**CloudWatch Logs Insights Queries**:
+- Track user sessions: `fields @timestamp, traceId, msg | filter userId like /68ba71036a95c7afb5aa60b1/`
+- Monitor authentication flows: `fields @timestamp, traceId, msg | filter url like /auth/ | sort @timestamp desc`
+- Trace request lifecycle: `fields @timestamp, msg | filter traceId = "ecbed0dc-a1d4-460c-8109-6460c367e463"`
+![cloudwatch-log-insights](docs/cloudwatch-log-insights.png)
+
 ## 📝 API Documentation
 
 Once running, visit https://be.easygenerator.omarshabaan.tech/api/docs for interactive API documentation (Swagger).
+
+## 🔄 CI/CD Pipeline
+
+### GitHub Actions Workflows
+
+The project uses GitHub Actions for automated CI/CD with separate workflows for frontend and backend:
+
+#### **Frontend Pipeline** (`.github/workflows/frontend-ci.yaml` & `deploy-frontend.yaml`)
+- **Triggers**: Pull requests and pushes to `main` branch (frontend changes only)
+- **CI Steps**:
+  - Code quality checks (ESLint, Prettier)
+  - Unit tests with coverage reporting
+  - Build verification
+- **Deployment**: 
+  - Builds React app and deploys to S3
+  - Invalidates CloudFront distribution
+  - **Live URL**: https://easygenerator.omarshabaan.tech
+
+#### **Backend Pipeline** (`.github/workflows/backend-ci.yaml` & `deploy-backend.yaml`)  
+- **Triggers**: Pull requests and pushes to `main` branch (backend changes only)
+- **CI Steps**:
+  - Code quality checks (ESLint, Prettier)
+  - Unit and integration tests
+  - Docker image build and push to ECR
+- **Deployment**:
+  - Deploys to AWS ECS with rolling updates
+  - **API URL**: https://be.easygenerator.omarshabaan.tech
+
+#### **Pipeline Features**
+- 🔒 **OIDC Authentication**: Secure AWS access without long-lived credentials
+- 📊 **Code Coverage**: Automated coverage reporting via CodeCov
+- 🏗️ **Path-based Triggers**: Only runs when relevant files change
+- 🔄 **Separate Environments**: Independent CI/CD for frontend and backend
+- ⚡ **Fast Builds**: Optimized Node.js caching and parallel jobs
+
+#### **Deployment Strategy**
+- **Frontend**: Zero-downtime deployment (S3 + CloudFront invalidation)
+- **Backend**: Rolling deployment with brief downtime (~30-60 seconds for cost optimization)
+
+#### **SSL/TLS Configuration**
+The backend API uses a cost-optimized SSL setup:
+
+- **SSL Termination**: Nginx reverse proxy on EC2 instance
+- **Certificate**: Let's Encrypt free SSL certificates with automatic renewal
+- **Architecture**: ECS on EC2 instances (not Fargate + ALB + ACM)
+  - **Cost Savings**: ~$16/month by avoiding Application Load Balancer
+  - **Trade-off**: Manual SSL management vs AWS Certificate Manager automation
+  - **Renewal**: Automated via certbot cron job on EC2 instance
+
+**Nginx Configuration**:
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name be.easygenerator.omarshabaan.tech;
+    
+    ssl_certificate /etc/letsencrypt/live/be.easygenerator.omarshabaan.tech/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/be.easygenerator.omarshabaan.tech/privkey.pem;
+    
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+#### **🔄 Future CI/CD Improvements (TODO)**
+- [ ] **Rollback Mechanism**: Automatic rollback on deployment failure or health check errors
+- [ ] **Blue-Green Deployment**: Zero-downtime backend deployments (currently simple rolling for cost)
+- [ ] **Fix Backend Linting Errors**: Resolve ESLint/Prettier issues in backend codebase
+- [ ] **End-to-End Testing**: Automated E2E tests in staging environment
+- [ ] **Performance Testing**: Load testing integration before production deployment
 
 ## 🚀 Deployment
 
